@@ -38,7 +38,6 @@ type Message struct { // 消息
 	// 设备ID
 	Data string `json:"data"`
 	// 消息内容
-
 }
 
 // 实现接口
