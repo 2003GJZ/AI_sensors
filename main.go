@@ -11,6 +11,7 @@ import (
 var logFile *os.File
 
 func init() {
+
 	// 注册结构体到DAO
 
 	dao.StructRegistry["Ammeter"] = dao.Ammeter{} //电表

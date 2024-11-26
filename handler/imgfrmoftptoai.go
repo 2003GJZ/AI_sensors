@@ -19,24 +19,26 @@ import (
 
 // 路由5的处理器: 读取最新图片并发送给AI服务器
 func UploadFtpHandler(c *gin.Context) {
+	path := "/var/ftp/ftpuser"
 	// 标记1: 获取mac字段
+	//用结构体接收
 	mac := c.PostForm("mac")
 	if mac == "" {
-		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("缺少mac字段"))
+		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
 		return
 	}
 
 	// 标记2: 构造文件夹路径
-	dirPath := filepath.Join("/var/ftp/ftpuser", mac)
+	dirPath := filepath.Join(path, mac)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("目录不存在"))
+		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("path not found"))
 		return
 	}
 
 	// 标记3: 获取最新图片文件
 	latestImage, err := getLatestFile(dirPath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("获取最新图片失败"))
+		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("img not found"))
 		return
 	}
 
@@ -49,7 +51,7 @@ func UploadFtpHandler(c *gin.Context) {
 	if tableType != "" {
 		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodel)
 	} else {
-		respondWithJSON(c, http.StatusInternalServerError, "未查询到表类型", nil)
+		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
 		return
 	}
 	//选择ai摸型
@@ -58,24 +60,25 @@ func UploadFtpHandler(c *gin.Context) {
 		// 标记4: 发送图片给AI服务器
 		aiResult, err := sendImageToAIServer(latestImage)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI处理失败"))
+			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI error"+err.Error()))
 			return
 		}
 		err, s := ParseJson(aiResult)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI处理失败"))
+			link.Client.HSet(link.Ctx, "ai_value", mac, "NULL")
+			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI error"+err.Error()))
 			return
 		}
 		// 标记5: 保存AI处理结果 到redis
 		link.Client.HSet(link.Ctx, "ai_value", mac, s)
-		respondWithJSON(c, http.StatusOK, "AI处理成功", nil)
+		respondWithJSON(c, http.StatusOK, "AI ok", nil)
 
 	case "aimodel2":
 
 		//TODO YOLOU AI
 	default:
 		fmt.Println("未查询到ai模型")
-		respondWithJSON(c, http.StatusInternalServerError, "未查询到ai模型", nil)
+		respondWithJSON(c, http.StatusInternalServerError, "not ai model", nil)
 
 	}
 
@@ -87,7 +90,6 @@ type FileInfoWithTime struct {
 	ModTime  time.Time
 }
 
-// getLatestFile 获取指定目录下最新修改的文件
 // getLatestFile 获取指定目录下最新修改的文件，同时控制文件数量
 func getLatestFile(dirPath string) (string, error) {
 	files, err := ioutil.ReadDir(dirPath)

@@ -1,5 +1,10 @@
 package dao
 
+type UpdataMacImg struct {
+	NeedsImage string `json:"needsImage"` // 是否需要更新图片   "1"需要   “0”不需要
+	NewMAC     string `json:"newMAC"`     // 新的MAC地址
+}
+
 // 改名601
 // 返回统一格式
 type Response struct {
@@ -9,8 +14,17 @@ type Response struct {
 }
 
 type Request struct {
-	MACAddress string `json:"mac_address" binding:"required"`
+	MACAddress   string       `json:"mac" binding:"required"`
+	UpdataMacImg UpdataMacImg `json:"updataMacImg" binding:"required"`
 }
+
+//{
+/*
+{
+"mac":"10010",
+"body":"\"needsImage\":\"0\",\"newMAC\":\"10061\"}"
+}
+*/
 
 // 统一错误返回
 func ResponseEER_400(err string) *Response {
