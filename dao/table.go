@@ -15,6 +15,14 @@ type Ammeter struct { // 电表
 	// 电压
 	Power string `json:"power"`
 	// 功率
+	ACurrent string `json:"a_current"`
+	BCurrent string `json:"b_current"`
+	CCurrent string `json:"c_current"`
+	//ABC	相电流
+	AVoltage string `json:"a_voltage"`
+	BVoltage string `json:"b_voltage"`
+	CVoltage string `json:"c_voltage"`
+	//ABC	相电压
 }
 
 // TempHum 温湿度
@@ -27,12 +35,6 @@ type TempHum struct { // 温湿度
 	// 湿度
 }
 
-type Device struct { // 设备
-	DeviceID string `json:"device_id"`
-	// 设备ID
-	DeviceName string `json:"device_name"`
-	// 设备名称
-}
 type Message struct { // 消息
 	DeviceID string `json:"device_id"`
 	// 设备ID

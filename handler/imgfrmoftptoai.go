@@ -9,6 +9,7 @@ import (
 	"imgginaimqtt/disposition"
 	"imgginaimqtt/mylink"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,19 +18,34 @@ import (
 	"time"
 )
 
+// 上传完图片通知
 // 路由5的处理器: 读取最新图片并发送给AI服务器
 func UploadFtpHandler(c *gin.Context) {
-	path := "/var/ftp/ftpuser"
-	// 标记1: 获取mac字段
+
+	// 标记1: 获
+	//取mac字段
 	//用结构体接收
-	mac := c.PostForm("mac")
-	if mac == "" {
-		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
+	//mac := c.PostForm("mac")
+	//if mac == "" {
+	//	c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
+	//	return
+	//}
+	var req dao.Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, dao.ResponseEER_400("Invalid request format"))
 		return
 	}
-
 	// 标记2: 构造文件夹路径
-	dirPath := filepath.Join(path, mac)
+	ptr := dao.MacAddressStatus[req.MACAddress]
+	lastUpdataTime := time.Now().UnixNano()
+
+	//填充当前时间
+	if ptr == nil {
+		dao.MacAddressStatus[req.MACAddress] = &dao.UpdataMacImg{LastUpdata: lastUpdataTime}
+	} else {
+		ptr.LastUpdata = lastUpdataTime
+	}
+	dirPath := filepath.Join(disposition.FtpPathex, req.MACAddress)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("path not found"))
 		return
@@ -46,7 +62,7 @@ func UploadFtpHandler(c *gin.Context) {
 	//查询redis选择表类型
 	var tableType string
 	var aimodel string
-	link.Client.HGet(link.Ctx, "type", mac).Scan(&tableType)
+	link.Client.HGet(link.Ctx, "type", req.MACAddress).Scan(&tableType)
 
 	if tableType != "" {
 		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodel)
@@ -54,6 +70,7 @@ func UploadFtpHandler(c *gin.Context) {
 		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
 		return
 	}
+	link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodel)
 	//选择ai摸型
 	switch aimodel {
 	case "aimodel1":
@@ -65,12 +82,12 @@ func UploadFtpHandler(c *gin.Context) {
 		}
 		err, s := ParseJson(aiResult)
 		if err != nil {
-			link.Client.HSet(link.Ctx, "ai_value", mac, "NULL")
+			link.Client.HSet(link.Ctx, "ai_value", req.MACAddress, "NULL")
 			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI error"+err.Error()))
 			return
 		}
 		// 标记5: 保存AI处理结果 到redis
-		link.Client.HSet(link.Ctx, "ai_value", mac, s)
+		link.Client.HSet(link.Ctx, "ai_value", req.MACAddress, s)
 		respondWithJSON(c, http.StatusOK, "AI ok", nil)
 
 	case "aimodel2":
@@ -124,7 +141,7 @@ func getLatestFile(dirPath string) (string, error) {
 		if err := os.Remove(oldestFilePath); err != nil {
 			return "", fmt.Errorf("failed to delete file %s: %v", oldestFilePath, err)
 		}
-		fmt.Printf("Deleted oldest file: %s\n", oldestFile.Name())
+		log.Printf("Deleted oldest file: %s\n", oldestFile.Name())
 	}
 
 	return latestFile.Name(), nil

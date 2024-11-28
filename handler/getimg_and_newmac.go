@@ -1,13 +1,12 @@
 package handler
 
 import (
+	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
-// 通知图片上传成功和新的MAC地址
+// 客户端通知图片上传成功
 func DeviceRequestHandle(c *gin.Context) {
 	var req dao.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -19,23 +18,20 @@ func DeviceRequestHandle(c *gin.Context) {
 
 	status := dao.MacAddressStatus[req.MACAddress]
 	if status != nil {
-		// 检查是否需要更新MAC地址
-		if status.NewMAC != "" && status.NewMAC != req.MACAddress {
-			c.JSON(http.StatusOK, dao.ResponseSuccess_610(status.NewMAC))
-			//清空需求
-			status.NewMAC = ""
-			dao.MacAddressStatus[req.MACAddress] = status
-			return
-		} else if status.NeedsImage == "1" { // 检查是否需要图片
+		//当前时间,用来做间隔时间上传
+		//UpdataTime := time.Now().UnixNano()
+		//|| (UpdataTime-status.LastUpdata) > int64(disposition.Interval)
+		if status.NeedsImage == "1" { // 检查是否需要图片
 			c.JSON(http.StatusOK, dao.ResponseSuccess_600())
 			status.NeedsImage = "0"
 		} else {
+			//不需要
 			c.JSON(http.StatusOK, dao.ResponseSuccess_601())
 		}
 	} else {
-		//MAC地址不存在，即当前mac无需下行
-		//使用mac地址hash后加上时间戳取模进行，概率定时上传
-		// TODO 加上上次上传的时间戳
+		//首次上传
+		dao.MacAddressStatus[req.MACAddress] = &dao.UpdataMacImg{}
+		c.JSON(http.StatusOK, dao.ResponseSuccess_600())
 
 	}
 

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
 	"imgginaimqtt/mylink"
+	"io/ioutil"
 	"log"
 	"reflect"
 )
@@ -99,6 +100,33 @@ func processAndSaveData(structHSetKey, dataHSetKey, key, inputData string) error
 	return nil
 }
 
+//// MQTT 处理器
+//func MqttHandler(c *gin.Context) {
+//	defer func() {
+//		if err := recover(); err != nil {
+//			respond(c, 500, "服务器内部错误", nil)
+//		}
+//	}()
+//
+//	structHSetKey := "type"   // 结构体查询表名
+//	dataHSetKey := "ai_value" // 数据存储表名
+//
+//	// 接收数据
+//	message := dao.Message{}
+//	if err := c.ShouldBindJSON(&message); err != nil {
+//		respond(c, 400, "请求参数错误", nil)
+//		return
+//	}
+//
+//	// 执行主逻辑
+//	if err := processAndSaveData(structHSetKey, dataHSetKey, message.DeviceID, message.Data); err != nil {
+//		respond(c, 500, fmt.Sprintf("数据处理失败: %v", err), nil)
+//		return
+//	}
+//
+//	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
+//}
+
 // MQTT 处理器
 func MqttHandler(c *gin.Context) {
 	defer func() {
@@ -107,21 +135,17 @@ func MqttHandler(c *gin.Context) {
 		}
 	}()
 
-	structHSetKey := "type"   // 结构体查询表名
-	dataHSetKey := "ai_value" // 数据存储表名
-
-	// 接收数据
-	message := dao.Message{}
-	if err := c.ShouldBindJSON(&message); err != nil {
-		respond(c, 400, "请求参数错误", nil)
+	// 读取请求体
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(400, dao.ResponseEER_400("err"))
 		return
 	}
+	defer c.Request.Body.Close()
 
-	// 执行主逻辑
-	if err := processAndSaveData(structHSetKey, dataHSetKey, message.DeviceID, message.Data); err != nil {
-		respond(c, 500, fmt.Sprintf("数据处理失败: %v", err), nil)
-		return
-	}
+	//bese64解码
+
+	fmt.Println("数据组:", string(body))
 
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 }

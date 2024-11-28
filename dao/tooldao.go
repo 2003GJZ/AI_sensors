@@ -2,7 +2,7 @@ package dao
 
 type UpdataMacImg struct {
 	NeedsImage string `json:"needsImage"` // 是否需要更新图片   "1"需要   “0”不需要
-	NewMAC     string `json:"newMAC"`     // 新的MAC地址
+	LastUpdata int64  `json:"listUpdata"` //上次更新时间
 }
 
 // 改名601
