@@ -5,6 +5,29 @@ type Table interface {
 	GetDeviceID() string
 }
 
+// 需不需要图片和图片上次上传时间
+type UpdataMacImg struct {
+	NeedsImage string `json:"needsImage"` // 是否需要更新图片   "1"需要   “0”不需要
+	LastUpdata int64  `json:"listUpdata"` //上次更新时间
+}
+type Aimodel struct {
+	AimodelName string `json:"aimodel_name"` //ai模型名称
+	AimodelUrl  string `json:"aimodel_url"`  //ai模型地址
+}
+
+// 改名601
+// 返回统一格式
+type Response struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+type Request struct {
+	MACAddress string       `json:"mac" binding:"required"`
+	UpdataImg  UpdataMacImg `json:"updataMacImg" binding:"required"`
+}
+
 // Ammeter 电表
 type Ammeter struct { // 电表
 	DeviceID string `json:"device_id"`
@@ -40,6 +63,12 @@ type Message struct { // 消息
 	// 设备ID
 	Data string `json:"data"`
 	// 消息内容
+}
+
+// 实现接口，用于
+func (m Message) Read(p []byte) (n int, err error) {
+
+	panic("implement me")
 }
 
 // 实现接口

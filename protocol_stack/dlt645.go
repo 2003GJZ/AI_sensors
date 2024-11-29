@@ -143,9 +143,9 @@ func ParseDataSegment(data []byte) (string, string, string, error) {
 	var value string
 	switch diInfo.Length {
 	case 2: // 2 字节数据
-		value = fmt.Sprintf("%d%d", dataValue[0], dataValue[1])
+		value = fmt.Sprintf("%02X%02X", dataValue[1], dataValue[0])
 	case 3: // 3 字节数据
-		value = fmt.Sprintf("%d%d%d", dataValue[0], dataValue[1], dataValue[2])
+		value = fmt.Sprintf("%02X%02X%02X", dataValue[2], dataValue[1], dataValue[0])
 	default:
 		return "", "0", "", fmt.Errorf("不支持的数据长度: %d 字节", diInfo.Length)
 	}

@@ -16,9 +16,9 @@ func UpdataMacImgHandler(c *gin.Context) { //被动下行接口
 	status := dao.MacAddressStatus[req.MACAddress]
 	if status == nil {
 		//没有查询到
-		dao.MacAddressStatus[req.MACAddress] = &req.UpdataMacImg
+		dao.MacAddressStatus[req.MACAddress] = &req.UpdataImg
 	} else {
-		status.NeedsImage = req.UpdataMacImg.NeedsImage
+		status.NeedsImage = req.UpdataImg.NeedsImage
 	}
 	c.JSON(200, dao.ResponseSuccess("Success"))
 

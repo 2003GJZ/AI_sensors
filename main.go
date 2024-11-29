@@ -11,14 +11,18 @@ import (
 var logFile *os.File
 
 func init() {
+	/*后加入nds维护*/
+	// TODO 加添ai模型对应路径到表中
+	dao.AimodelTable["aimodel1"] = dao.Aimodel{
+		AimodelUrl:  "http://127.0.0.1:9091/predict",
+		AimodelName: "aimodel1",
+	}
 
 	// 注册结构体到DAO
 
 	dao.StructRegistry["Ammeter"] = dao.Ammeter{} //电表
 
 	dao.StructRegistry["temphum"] = dao.TempHum{} //温湿度
-
-	dao.StructRegistry["device"] = dao.Device{} //设备
 
 	// 创建存储文件夹
 	if err := os.MkdirAll(disposition.UploadDir, os.ModePerm); err != nil {

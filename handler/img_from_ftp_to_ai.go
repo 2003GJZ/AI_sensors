@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"imgginaimqtt/mylink"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,82 +27,133 @@ func UploadFtpHandler(c *gin.Context) {
 	// 标记1: 获
 	//取mac字段
 	//用结构体接收
-	//mac := c.PostForm("mac")
-	//if mac == "" {
-	//	c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
-	//	return
-	//}
-	var req dao.Request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, dao.ResponseEER_400("Invalid request format"))
+	id := c.PostForm("id")
+	imgname := c.PostForm("imgname")
+
+	if id == "" || imgname == "" {
+		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
 		return
 	}
+	//var req dao.Request
+	//if err := c.ShouldBindJSON(&req); err != nil {
+	//	c.JSON(400, dao.ResponseEER_400("Invalid request format"))
+	//	return
+	//}
 	// 标记2: 构造文件夹路径
-	ptr := dao.MacAddressStatus[req.MACAddress]
+	ptr := dao.MacAddressStatus[id]
 	lastUpdataTime := time.Now().UnixNano()
 
 	//填充当前时间
 	if ptr == nil {
-		dao.MacAddressStatus[req.MACAddress] = &dao.UpdataMacImg{LastUpdata: lastUpdataTime}
+		dao.MacAddressStatus[id] = &dao.UpdataMacImg{LastUpdata: lastUpdataTime}
 	} else {
 		ptr.LastUpdata = lastUpdataTime
 	}
-	dirPath := filepath.Join(disposition.FtpPathex, req.MACAddress)
+
+	//检查文件夹是否存在
+	dirPath := filepath.Join(disposition.FtpPathex, id)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("path not found"))
 		return
 	}
 
 	// 标记3: 获取最新图片文件
-	latestImage, err := getLatestFile(dirPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("img not found"))
-		return
-	}
+	//latestImage, err := getLatestFile(dirPath)
+	//if err != nil {
+	//	c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("img not found"))
+	//	return
+	//}
+
+	//根据发过来的图片path获取图片
 
 	link, _ := mylink.GetredisLink()
 	//查询redis选择表类型
 	var tableType string
-	var aimodel string
-	link.Client.HGet(link.Ctx, "type", req.MACAddress).Scan(&tableType)
+	var aimodelName string
+	link.Client.HGet(link.Ctx, "type", id).Scan(&tableType)
 
+	//查询redis选择ai模型
 	if tableType != "" {
-		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodel)
+		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
 	} else {
 		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
 		return
 	}
-	link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodel)
-	//选择ai摸型
-	switch aimodel {
-	case "aimodel1":
-		// 标记4: 发送图片给AI服务器
-		aiResult, err := sendImageToAIServer(latestImage)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI error"+err.Error()))
+	link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
+
+	ch := make(chan int)
+	//启动匿名函数发送给ai
+	go func() {
+		link1, _ := mylink.GetredisLink()
+		//选择ai摸型
+		//查询AI地址
+		status := dao.MacAddressStatus[id]
+		aimodel, ok := dao.AimodelTable[aimodelName]
+
+		if !ok {
+			ch <- 600
+		}
+		// 标记4: 发送图片给AI服务器,
+		// 创建一个buffer来存储请求体
+		var requestBody bytes.Buffer
+
+		// 创建一个multipart writer
+		writer := multipart.NewWriter(&requestBody)
+		//参数”img“
+		imgpath := disposition.FtpPathex + "/" + "id" + "/" + imgname
+		writer.WriteField("img", imgpath)
+		//参数body
+		var tabe string
+		link1.Client.HGet(link.Ctx, "imgRes", "id").Scan(&tabe)
+		writer.WriteField("body", tabe)
+
+		//response, err2 := http.Post(aimodel.AimodelUrl, "application/json", strings.NewReader(imgpath))
+		response, err2 := http.Post(aimodel.AimodelUrl, writer.FormDataContentType(), &requestBody)
+		if err2 != nil {
+			ch <- 600
+			ch <- 600
+			log.Println(aimodel.AimodelName, "请求地址错误-------------------------------->>ERR>>>>", err2)
 			return
 		}
-		err, s := ParseJson(aiResult)
-		if err != nil {
-			link.Client.HSet(link.Ctx, "ai_value", req.MACAddress, "NULL")
-			c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI error"+err.Error()))
-			return
+		//判断code
+		if response.StatusCode != http.StatusOK {
+			//识别失败继续上传
+			if status != nil {
+				status.NeedsImage = "1"
+			}
+			ch <- 601
+			ch <- 601
+		} else {
+			//读出返回的数据
+			body, err := ioutil.ReadAll(response.Body)
+			if err != nil {
+				return
+			}
+			// 标记5: 保存AI处理结果 到redis
+			link1.Client.HSet(link1.Ctx, "ai_value", id, string(body))
+			ch <- 600
+			ch <- 600
 		}
-		// 标记5: 保存AI处理结果 到redis
-		link.Client.HSet(link.Ctx, "ai_value", req.MACAddress, s)
-		respondWithJSON(c, http.StatusOK, "AI ok", nil)
 
-	case "aimodel2":
-
-		//TODO YOLOU AI
-	default:
-		fmt.Println("未查询到ai模型")
-		respondWithJSON(c, http.StatusInternalServerError, "not ai model", nil)
-
+	}()
+	code := 600
+	//等待20ns
+	select {
+	case <-ch:
+		code = <-ch
+		if code == 601 {
+			c.JSON(601, dao.ResponseSuccess_601())
+		} else {
+			c.JSON(600, dao.ResponseSuccess_600())
+		}
+		return
+	case <-time.After(200 * time.Second):
+		c.JSON(600, dao.ResponseSuccess_600())
 	}
 
 }
 
+/*废弃*/
 // FileInfoWithTime 包含文件信息和修改时间
 type FileInfoWithTime struct {
 	FileInfo os.FileInfo

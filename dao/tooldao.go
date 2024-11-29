@@ -1,22 +1,10 @@
 package dao
 
-type UpdataMacImg struct {
-	NeedsImage string `json:"needsImage"` // 是否需要更新图片   "1"需要   “0”不需要
-	LastUpdata int64  `json:"listUpdata"` //上次更新时间
-}
-
-// 改名601
-// 返回统一格式
-type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
-type Request struct {
-	MACAddress   string       `json:"mac" binding:"required"`
-	UpdataMacImg UpdataMacImg `json:"updataMacImg" binding:"required"`
-}
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+)
 
 //{
 /*
@@ -27,6 +15,20 @@ type Request struct {
 */
 
 // 统一错误返回
+
+// 一个通知函数，我去发一个post请求给http://127.0.0.1:9000/
+func Notice_post(message Message) {
+	//发起一个http请求到http://127.0.0.1:9000/
+	//把message的body传过去
+	// 将结构体编码为JSON
+	jsonData, err := json.Marshal(message)
+	if err != nil {
+		panic(err)
+	}
+	http.Post("http://127.0.0.1:9000/", "application/json", bytes.NewBuffer(jsonData))
+
+}
+
 func ResponseEER_400(err string) *Response {
 	return &Response{
 		Code:    400,
@@ -58,7 +60,7 @@ func ResponseSuccess_610(newname string) *Response {
 func ResponseSuccess_600() *Response {
 	return &Response{
 		Code:    600,
-		Message: "yes",
+		Message: "no",
 		Data:    nil,
 	}
 }
@@ -67,7 +69,7 @@ func ResponseSuccess_600() *Response {
 func ResponseSuccess_601() *Response {
 	return &Response{
 		Code:    601,
-		Message: "no",
+		Message: "yes",
 		Data:    nil,
 	}
 }

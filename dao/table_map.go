@@ -5,3 +5,6 @@ var StructRegistry = map[string]interface{}{}
 
 // 模拟MAC地址和状态的存储
 var MacAddressStatus = map[string]*UpdataMacImg{}
+
+// aimodel表
+var AimodelTable = map[string]Aimodel{}

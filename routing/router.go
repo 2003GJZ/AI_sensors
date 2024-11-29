@@ -39,6 +39,9 @@ func Router() *gin.Engine {
 	//路由标记8:接收mqqt协议数据，解析为DLT645协议，数据存储在redis中，使用电表地址作为key
 	router.POST("/mqttdlt645base64", handler.MqttBaes64Handler)
 
+	//路由标记漏水，液位
+	router.POST("/waterlevel", handler.WaterLevelHandler)
+
 	// TODO 路由标记8:
 	//1.DLT645-2007协议解析栈 (ok)
 	// TODO 2.处理逻辑实现
