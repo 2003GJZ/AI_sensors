@@ -133,6 +133,8 @@ func UploadFtpHandler(c *gin.Context) {
 			link1.Client.HSet(link1.Ctx, "ai_value", id, string(body))
 			ch <- 600
 			ch <- 600
+			// 标记6: 通知前端
+			dao.NoticeUpdate(id)
 		}
 
 	}()

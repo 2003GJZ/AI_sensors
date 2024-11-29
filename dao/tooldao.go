@@ -3,6 +3,7 @@ package dao
 import (
 	"bytes"
 	"encoding/json"
+	"imgginaimqtt/disposition"
 	"net/http"
 )
 
@@ -72,4 +73,10 @@ func ResponseSuccess_601() *Response {
 		Message: "yes",
 		Data:    nil,
 	}
+}
+
+// 向前端通知，哪个数据有变化
+func NoticeUpdate(id string) {
+	//发起一个http请求到http://127.0.0.1:9000/
+	http.Post(disposition.NoticeUpdataUrl, "application/json", bytes.NewBuffer([]byte(id)))
 }

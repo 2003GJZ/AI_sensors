@@ -36,5 +36,6 @@ func WaterLevelHandler(c *gin.Context) {
 	link, _ := mylink.GetredisLink()
 	link.Client.HSet(link.Ctx, "ai_value", "10086", waterlevel)
 	c.JSON(200, dao.ResponseSuccess("ok"))
+	dao.NoticeUpdate("10086")
 
 }
