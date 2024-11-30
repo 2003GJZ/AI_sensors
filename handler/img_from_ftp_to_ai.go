@@ -155,7 +155,7 @@ func UploadFtpHandler(c *gin.Context) {
 
 }
 
-/*废弃*/
+/*********************************************废弃**************************************************************************/
 // FileInfoWithTime 包含文件信息和修改时间
 type FileInfoWithTime struct {
 	FileInfo os.FileInfo
