@@ -11,7 +11,6 @@ import (
 	"imgginaimqtt/mylink"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,6 +18,11 @@ import (
 	"strings"
 	"time"
 )
+
+type imgai struct {
+	Img_path string `json:"img_path"`
+	Data     string `json:"data"`
+}
 
 // 上传完图片通知
 // 路由5的处理器: 读取最新图片并发送给AI服务器
@@ -51,11 +55,11 @@ func UploadFtpHandler(c *gin.Context) {
 	}
 
 	//检查文件夹是否存在
-	dirPath := filepath.Join(disposition.FtpPathex, id)
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("path not found"))
-		return
-	}
+	//dirPath := filepath.Join(disposition.FtpPathex, id)
+	//if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+	//	c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("path not found"))
+	//	return
+	//}
 
 	// 标记3: 获取最新图片文件
 	//latestImage, err := getLatestFile(dirPath)
@@ -79,9 +83,8 @@ func UploadFtpHandler(c *gin.Context) {
 		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
 		return
 	}
-	link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
 
-	ch := make(chan int)
+	//ch := make(chan int)
 	//启动匿名函数发送给ai
 	go func() {
 		link1, _ := mylink.GetredisLink()
@@ -91,27 +94,40 @@ func UploadFtpHandler(c *gin.Context) {
 		aimodel, ok := dao.AimodelTable[aimodelName]
 
 		if !ok {
-			ch <- 600
+			//没有此模型
+			log.Println(aimodelName, "没有此模型-------------------------------->>ERR>>>>")
+			return
 		}
 		// 标记4: 发送图片给AI服务器,
-		// 创建一个buffer来存储请求体
-		var requestBody bytes.Buffer
 
-		// 创建一个multipart writer
-		writer := multipart.NewWriter(&requestBody)
 		//参数”img“
-		imgpath := disposition.FtpPathex + "/" + "id" + "/" + imgname
-		writer.WriteField("img", imgpath)
+		imgmaseg := imgai{
+			Img_path: "",
+			Data:     "",
+		}
+		imgpath := disposition.FtpPathex + "/" + id + "/" + imgname
+
+		// imgpath := "D:\\\\PythonProject\\\\Project\\\\lige\\\\PythonProject2\\\\static\\\\indicator\\\\H1L12A.jpg"
+		// imgmaseg.Data = "{\"indicator_center_list\": [[89, 131], [195, 133], [301, 133], [411, 133], [84, 238], [192, 238], [300, 241], [410, 242]], \"indicator_namelist\": [\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"]}"
+
 		//参数body
+		imgmaseg.Img_path = imgpath
 		var tabe string
-		link1.Client.HGet(link.Ctx, "imgRes", "id").Scan(&tabe)
-		writer.WriteField("body", tabe)
+		link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)
+		imgmaseg.Data = tabe
 
 		//response, err2 := http.Post(aimodel.AimodelUrl, "application/json", strings.NewReader(imgpath))
-		response, err2 := http.Post(aimodel.AimodelUrl, writer.FormDataContentType(), &requestBody)
+		//打印请求
+		fmt.Println("请求地址：", aimodel.AimodelUrl)
+		fmt.Println("请求参数：", imgpath)
+		//转json
+		jsonData, _ := json.Marshal(imgmaseg)
+		fmt.Println("请求参数：", string(jsonData))
+
+		response, err2 := http.Post(aimodel.AimodelUrl, "application/json", bytes.NewBuffer(jsonData))
 		if err2 != nil {
-			ch <- 600
-			ch <- 600
+			//ch <- 600
+			//ch <- 600
 			log.Println(aimodel.AimodelName, "请求地址错误-------------------------------->>ERR>>>>", err2)
 			return
 		}
@@ -121,8 +137,8 @@ func UploadFtpHandler(c *gin.Context) {
 			if status != nil {
 				status.NeedsImage = "1"
 			}
-			ch <- 601
-			ch <- 601
+			//ch <- 601
+			//ch <- 601
 		} else {
 			//读出返回的数据
 			body, err := ioutil.ReadAll(response.Body)
@@ -131,27 +147,30 @@ func UploadFtpHandler(c *gin.Context) {
 			}
 			// 标记5: 保存AI处理结果 到redis
 			link1.Client.HSet(link1.Ctx, "ai_value", id, string(body))
-			ch <- 600
-			ch <- 600
+			//ch <- 600
+			//ch <- 600
 			// 标记6: 通知前端
 			dao.NoticeUpdate(id)
 		}
 
 	}()
-	code := 600
-	//等待20ns
-	select {
-	case <-ch:
-		code = <-ch
-		if code == 601 {
-			c.JSON(601, dao.ResponseSuccess_601())
-		} else {
-			c.JSON(600, dao.ResponseSuccess_600())
-		}
-		return
-	case <-time.After(200 * time.Second):
-		c.JSON(600, dao.ResponseSuccess_600())
-	}
+	// 标记7: 返回成功响应 ，不需要图片
+	c.JSON(210, dao.ResponseSuccess_210())
+	return
+	//code := 600
+	////等待20ns
+	//select {
+	//case <-ch:
+	//	code = <-ch
+	//	if code == 601 {
+	//		c.JSON(601, dao.ResponseSuccess_601())
+	//	} else {
+	//		c.JSON(600, dao.ResponseSuccess_600())
+	//	}
+	//	return
+	//case <-time.After(200 * time.Second):
+	//	c.JSON(600, dao.ResponseSuccess_600())
+	//}
 
 }
 

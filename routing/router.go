@@ -27,11 +27,11 @@ func Router() *gin.Engine {
 	// TODO YOLOU 识别 上传nfs path 路径
 	router.POST("/upload_success", handler.UploadFtpHandler)
 
-	//路由标记6:iot端询问是否需要图片，回包带上是否需要更新mac地址
-	router.POST("/need_imagemac", handler.DeviceRequestHandle)
+	//路由标记6:iot端询问是否需要图片，
+	router.POST("/need_image", handler.DeviceRequestHandle)
 
 	//路由标记7:客户端发起mac地址更新请求,或者是否需要图片请求，触发被动下行      MAC更新完了后会触发文件删除，和redis重置
-	router.POST("/update_imagemac", handler.UpdataMacImgHandler)
+	router.POST("/update_image", handler.UpdataImgHandler)
 
 	//DltHttp(测试用)
 	router.POST("/dlthttp", handler.DltHttp)
@@ -41,6 +41,9 @@ func Router() *gin.Engine {
 
 	//路由标记漏水，液位
 	router.POST("/waterlevel", handler.WaterLevelHandler)
+
+	//路由标记 mkdir
+	router.POST("/mkdir", handler.MkdirHandler)
 
 	// TODO 路由标记8:
 	//1.DLT645-2007协议解析栈 (ok)

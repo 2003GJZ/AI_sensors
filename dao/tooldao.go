@@ -58,18 +58,18 @@ func ResponseSuccess_610(newname string) *Response {
 }
 
 // 需要图片
-func ResponseSuccess_600() *Response {
+func ResponseSuccess_210() *Response {
 	return &Response{
-		Code:    600,
+		Code:    210,
 		Message: "no",
 		Data:    nil,
 	}
 }
 
 // 不需要图片
-func ResponseSuccess_601() *Response {
+func ResponseSuccess_211() *Response {
 	return &Response{
-		Code:    601,
+		Code:    211,
 		Message: "yes",
 		Data:    nil,
 	}
@@ -78,5 +78,5 @@ func ResponseSuccess_601() *Response {
 // 向前端通知，哪个数据有变化
 func NoticeUpdate(id string) {
 	//发起一个http请求到http://127.0.0.1:9000/
-	http.Post(disposition.NoticeUpdataUrl, "application/json", bytes.NewBuffer([]byte(id)))
+	http.Post(disposition.NoticeUpdataUrl, "application/text", bytes.NewBuffer([]byte(id)))
 }

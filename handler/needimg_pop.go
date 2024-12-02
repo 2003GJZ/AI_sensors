@@ -20,16 +20,16 @@ func DeviceRequestHandle(c *gin.Context) {
 		//UpdataTime := time.Now().UnixNano()
 		//|| (UpdataTime-status.LastUpdata) > int64(disposition.Interval)
 		if status.NeedsImage == "1" { // 检查是否需要图片
-			c.JSON(601, dao.ResponseSuccess_601())
+			c.JSON(211, dao.ResponseSuccess_211())
 			status.NeedsImage = "0"
 		} else {
 			//不需要
-			c.JSON(600, dao.ResponseSuccess_600())
+			c.JSON(210, dao.ResponseSuccess_210())
 		}
 	} else {
 		//首次上传
 		dao.MacAddressStatus[id] = &dao.UpdataMacImg{}
-		c.JSON(601, dao.ResponseSuccess_601())
+		c.JSON(211, dao.ResponseSuccess_211())
 
 	}
 

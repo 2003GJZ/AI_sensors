@@ -18,5 +18,5 @@ var OcrURL = "https://aip.baidubce.com/rest/2.0/ocr/v1/meter"
 var MaxfileImg = 5      //文件数目
 var Interval = 60000000 //间隔时间us
 
-var FtpPathex = "/var/ftp/ftpuser"               //ftp目录
-var NoticeUpdataUrl = "http:/127.0.0.1:/xxx/xxx" //ftp地址
+var FtpPathex = "/var/ftp/ftpuser"                                   //ftp目录
+var NoticeUpdataUrl = "http:/192.168.18.38:3000/monitor/updataAiRes" //ftp地址 通知前端哪个IP处理结果完成了去redis拿

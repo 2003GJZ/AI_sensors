@@ -13,8 +13,8 @@ var logFile *os.File
 func init() {
 	/*后加入nds维护*/
 	// TODO 加添ai模型对应路径到表中
-	dao.AimodelTable["aimodel1"] = dao.Aimodel{
-		AimodelUrl:  "http://127.0.0.1:9091/predict",
+	dao.AimodelTable["3106444523"] = dao.Aimodel{
+		AimodelUrl:  "http://192.168.18.38:5000/recognize/indicator",
 		AimodelName: "aimodel1",
 	}
 
