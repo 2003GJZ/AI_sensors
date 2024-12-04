@@ -1,18 +1,18 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/disposition"
-	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 // 获取token 已废弃
@@ -25,53 +25,116 @@ type AccessTokenResponse struct {
 /////////////////////////////////////////////////////////////////////////路由2/////////////////////////////////////////////
 
 // 路由2的处理器: 上传图片并发送给AI服务器
+//func UploadHandler(c *gin.Context) {
+//	// 标记2_1: 获取上传的文件
+//	id := c.PostForm("id")
+//	file, header, err := c.Request.FormFile("image")
+//	if err != nil {
+//		// 标记2_1_1: 文件解析失败
+//		respondWithJSON(c, http.StatusBadRequest, "文件解析失败", nil)
+//		return
+//	}
+//	defer file.Close()
+//
+//	// 标记2_2: 构造保存文件路径
+//	ext := filepath.Ext(header.Filename)
+//	filename := fmt.Sprintf("%d%s%s", time.Now().UnixNano(), ext)
+//	filePath := filepath.Join(disposition.UploadDir, filename)
+//
+//	// 标记2_3: 保存文件到本地
+//	savedFile, err := os.Create(filePath)
+//	if err != nil {
+//		// 标记2_3_1: 文件保存失败
+//		respondWithJSON(c, http.StatusInternalServerError, "文件保存失败", nil)
+//		return
+//	}
+//	defer savedFile.Close()
+//	if _, err := io.Copy(savedFile, file); err != nil {
+//		// 标记2_3_2: 文件复制失败
+//		respondWithJSON(c, http.StatusInternalServerError, "文件保存失败", nil)
+//		return
+//	}
+//
+//	// 标记2_4: 发送图片给AI服务器
+//	aiResult, err := sendImageToAIServer(filePath)
+//	if err != nil {
+//		// 标记2_4_1: AI处理失败
+//		respondWithJSON(c, http.StatusInternalServerError, "AI处理失败", nil)
+//		return
+//	}
+//
+//	// 标记2_5: 保存AI处理结果
+//	if err := saveAIResult(aiResult, disposition.AiResultsDir, filename+"_results.json"); err != nil {
+//		// 标记2_5_1: 保存失败
+//		respondWithJSON(c, http.StatusInternalServerError, "保存AI结果失败", nil)
+//		return
+//	}
+//
+//	// 标记2_6: 返回图片的URL
+//	imageURL := fmt.Sprintf("%s/images/%s", disposition.ServerHost, filename)
+//	respondWithJSON(c, http.StatusOK, "文件上传成功", map[string]string{"image_url": imageURL})
+//}
+
 func UploadHandler(c *gin.Context) {
 	// 标记2_1: 获取上传的文件
+	id := c.PostForm("id")
 	file, header, err := c.Request.FormFile("image")
 	if err != nil {
-		// 标记2_1_1: 文件解析失败
-		respondWithJSON(c, http.StatusBadRequest, "文件解析失败", nil)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	defer file.Close()
 
-	// 标记2_2: 构造保存文件路径
-	ext := filepath.Ext(header.Filename)
-	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-	filePath := filepath.Join(disposition.UploadDir, filename)
-
-	// 标记2_3: 保存文件到本地
-	savedFile, err := os.Create(filePath)
-	if err != nil {
-		// 标记2_3_1: 文件保存失败
-		respondWithJSON(c, http.StatusInternalServerError, "文件保存失败", nil)
-		return
-	}
-	defer savedFile.Close()
-	if _, err := io.Copy(savedFile, file); err != nil {
-		// 标记2_3_2: 文件复制失败
-		respondWithJSON(c, http.StatusInternalServerError, "文件保存失败", nil)
-		return
+	// 创建保存文件的目录
+	//savePath := "/var/ftp/ftpuser/" + id
+	savePath := "D:\\var\\ftp\\ftpuser\\" + id
+	if _, err := os.Stat(savePath); os.IsNotExist(err) {
+		if err := os.MkdirAll(savePath, 0755); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory: " + err.Error()})
+			return
+		}
 	}
 
-	// 标记2_4: 发送图片给AI服务器
-	aiResult, err := sendImageToAIServer(filePath)
-	if err != nil {
-		// 标记2_4_1: AI处理失败
-		respondWithJSON(c, http.StatusInternalServerError, "AI处理失败", nil)
-		return
-	}
+	// 构建完整的文件路径
+	outPath := filepath.Join(savePath, header.Filename)
 
-	// 标记2_5: 保存AI处理结果
-	if err := saveAIResult(aiResult, disposition.AiResultsDir, filename+"_results.json"); err != nil {
-		// 标记2_5_1: 保存失败
-		respondWithJSON(c, http.StatusInternalServerError, "保存AI结果失败", nil)
-		return
+	// 将文件保存到指定路径
+	if err := c.SaveUploadedFile(header, outPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file: " + err.Error()})
 	}
+	//通知图片处理
+	go func() {
+		irl := "http://127.0.0.1:4399/upload_success"
+		// 创建一个buffer用于存储表单数据
+		var buffer bytes.Buffer
 
-	// 标记2_6: 返回图片的URL
-	imageURL := fmt.Sprintf("%s/images/%s", disposition.ServerHost, filename)
-	respondWithJSON(c, http.StatusOK, "文件上传成功", map[string]string{"image_url": imageURL})
+		// 创建一个multipart writer
+		writer := multipart.NewWriter(&buffer)
+
+		// 添加字段
+		err := writer.WriteField("id", id)
+		if err != nil {
+			panic(err)
+		}
+		//将文件名传过去
+		err = writer.WriteField("imgname", header.Filename)
+		if err != nil {
+			panic(err)
+		}
+
+		// 关闭writer以确保所有数据都被写入
+		err = writer.Close()
+		if err != nil {
+			panic(err)
+		}
+
+		// 创建请求
+		http.Post(irl, writer.FormDataContentType(), &buffer)
+		//fmt.Println(&buffer)
+
+	}()
+	// 返回成功响应
+	c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully", "id": id, "filename": header.Filename})
 }
 
 /////////////////////////////////////////////////////辅助函数//////////////////////////////////////////////////////////////////

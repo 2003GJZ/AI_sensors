@@ -3,6 +3,7 @@ package dao
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"imgginaimqtt/disposition"
 	"net/http"
 )
@@ -75,8 +76,19 @@ func ResponseSuccess_211() *Response {
 	}
 }
 
+type meter struct {
+	MeterID string `json:"meterID"`
+}
+
 // 向前端通知，哪个数据有变化
 func NoticeUpdate(id string) {
 	//发起一个http请求到http://127.0.0.1:9000/
-	http.Post(disposition.NoticeUpdataUrl, "application/text", bytes.NewBuffer([]byte(id)))
+	body := meter{
+		MeterID: id,
+	}
+	// 将结构体编码为JSON
+	jsonData, _ := json.Marshal(body)
+	fmt.Println(string(jsonData))
+
+	http.Post(disposition.NoticeUpdataUrl, "application/json", bytes.NewBuffer(jsonData))
 }

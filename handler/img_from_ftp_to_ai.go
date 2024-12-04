@@ -21,7 +21,6 @@ import (
 
 type imgai struct {
 	Img_path string `json:"img_path"`
-	Data     string `json:"data"`
 }
 
 // 上传完图片通知
@@ -103,18 +102,18 @@ func UploadFtpHandler(c *gin.Context) {
 		//参数”img“
 		imgmaseg := imgai{
 			Img_path: "",
-			Data:     "",
+			//Data:     "",
 		}
-		imgpath := disposition.FtpPathex + "/" + id + "/" + imgname
+		imgpath := disposition.FtpPathex + "//" + id + "//" + imgname
 
 		// imgpath := "D:\\\\PythonProject\\\\Project\\\\lige\\\\PythonProject2\\\\static\\\\indicator\\\\H1L12A.jpg"
 		// imgmaseg.Data = "{\"indicator_center_list\": [[89, 131], [195, 133], [301, 133], [411, 133], [84, 238], [192, 238], [300, 241], [410, 242]], \"indicator_namelist\": [\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"]}"
 
 		//参数body
 		imgmaseg.Img_path = imgpath
-		var tabe string
-		link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)
-		imgmaseg.Data = tabe
+		//var tabe string
+		//link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)
+		//imgmaseg.Data = tabe
 
 		//response, err2 := http.Post(aimodel.AimodelUrl, "application/json", strings.NewReader(imgpath))
 		//打印请求

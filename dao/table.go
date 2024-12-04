@@ -46,6 +46,7 @@ type Ammeter struct { // 电表
 	BVoltage string `json:"b_voltage"`
 	CVoltage string `json:"c_voltage"`
 	//ABC	相电压
+
 }
 
 // TempHum 温湿度

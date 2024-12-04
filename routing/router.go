@@ -15,7 +15,7 @@ func Router() *gin.Engine {
 	//router.GET("/images", handler.ImagesHandler)
 
 	// 路由标记2: 上传图片并处理AI结果（已废弃）
-	//router.POST("/upload", handler.UploadHandler)
+	router.POST("/upload", handler.UploadHandler)
 
 	// 路由标记3: 获取AI结果（已废弃）
 	//router.GET("/ai_result/:filename", handler.AiResultHandler)

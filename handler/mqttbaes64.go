@@ -97,11 +97,12 @@ func MqttBaes64Handler(c *gin.Context) {
 
 	// 将JSON数据转换为字符串
 	jsonString := string(jsonData)
+	ammeter.DeviceID = "123456"
 
 	link, _ := mylink.GetredisLink()
-	link.Client.HSet(link.Ctx, "ai_value", ammeter.DeviceID, jsonString)
+	link.Client.HSet(link.Ctx, "ai_value", "123456", jsonString)
 	// 将字符串保存到Redis
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 	//通知前端
-	dao.NoticeUpdate(ammeter.DeviceID)
+	dao.NoticeUpdate("123456")
 }
