@@ -30,7 +30,7 @@ func MqttBaes64Handler(c *gin.Context) {
 	//body, err := ioutil.ReadAll(c.Request.Body)
 	//接收请求体,用结构体
 	var req MQTTMessage
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || req.Topic == "" || req.Message == "" {
 		c.JSON(400, dao.ResponseEER_400("Invalid request format"))
 		return
 	}
@@ -105,6 +105,7 @@ func MqttBaes64Handler(c *gin.Context) {
 
 	// 将JSON数据转换为字符串
 	jsonString := string(jsonData)
+	//TODO 将字符串保存到Redis
 	ammeter.DeviceID = "123456"
 
 	link, _ := mylink.GetredisLink()
