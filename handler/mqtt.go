@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
 	"imgginaimqtt/mylink"
+	"imgginaimqtt/protocol_stack"
+	_ "imgginaimqtt/protocol_stack"
 	"io/ioutil"
 	"log"
 	"reflect"
@@ -144,7 +146,7 @@ func MqttHandler(c *gin.Context) {
 	defer c.Request.Body.Close()
 
 	//bese64解码
-
+	body, _ = protocol_stack.MyBase64ToBytes(string(body))
 	fmt.Println("数据组:", string(body))
 
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
