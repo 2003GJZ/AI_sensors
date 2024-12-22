@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"imgginaimqtt/protocol_stack"
+	_ "imgginaimqtt/protocol_stack"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 )
 
 // 发送报文到网关
@@ -42,46 +45,57 @@ func SendReportHandler(c *gin.Context) {
 		})
 		return
 	}
-
-	//// 直接使用请求中的数据
-	//attributes := map[string]string{
-	//	"ACurrent": requestBody.Data.ACurrent,
-	//	"BCurrent": requestBody.Data.BCurrent,
-	//	"CCurrent": requestBody.Data.CCurrent,
-	//	"AVoltage": requestBody.Data.AVoltage,
-	//	"BVoltage": requestBody.Data.BVoltage,
-	//	"CVoltage": requestBody.Data.CVoltage,
-	//	"Power":    requestBody.Data.Power,
-	//}
-	//
-	//// 将 attributes 转换为 JSON 字符串
-	//attributesJson, err := json.Marshal(attributes)
-	//if err != nil {
-	//	log.Printf("构建 JSON 属性失败: %v", err)
-	//	c.JSON(http.StatusInternalServerError, gin.H{
-	//		"status":  "error",
-	//		"message": "构建 JSON 属性失败",
-	//	})
-	//	return
-	//}
-
-	attributesJson, err := json.Marshal(requestBody.Data)
-	fmt.Println(attributesJson)
-
-	// 对 JSON 字符串进行 Base64 编码
-	base64Message := base64.StdEncoding.EncodeToString(attributesJson)
-
-	// 发送报文到网关
-	err = sendToGateway(meterID, base64Message)
-	if err != nil {
-		log.Printf("发送报文失败: %v", err)
-		fmt.Printf("发送报文失败: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "发送报文失败",
-		})
-		return
+	err1 := subscribeToGateway(meterID)
+	if err1 != nil {
+		log.Fatalf("订阅主题失败: %v", err1)
 	}
+	//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// 定义字段与命令码的映射
+	fieldCommandMap := map[string]struct {
+		Command byte
+		Data    []byte
+	}{
+		"ACurrent": {0x11, []byte{0x00, 0x00, 0x01, 0x02}},
+		"BCurrent": {0x12, []byte{0x00, 0x00, 0x01, 0x03}},
+		"CCurrent": {0x13, []byte{0x00, 0x00, 0x01, 0x04}},
+		"AVoltage": {0x14, []byte{0x00, 0x00, 0x01, 0x05}},
+		"BVoltage": {0x15, []byte{0x00, 0x00, 0x01, 0x06}},
+		"CVoltage": {0x16, []byte{0x00, 0x00, 0x01, 0x07}},
+		"Power":    {0x17, []byte{0x00, 0x00, 0x01, 0x08}},
+	}
+
+	var newFrame []byte
+	var err error
+
+	// 循环遍历 Data 结构体中的字段
+	for fieldName, fieldData := range fieldCommandMap {
+		fieldValue := reflect.ValueOf(requestBody.Data).FieldByName(fieldName).String()
+		if fieldValue != "" {
+			newFrame, err = protocol_stack.BuildDLT645Frame(meterID, fieldData.Command, fieldData.Data)
+			if err != nil {
+				log.Printf("生成失败: %v\n", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":  "error",
+					"message": "生成帧失败",
+				})
+				return
+			}
+			// 对 JSON 字符串进行 Base64 编码
+			base64Message := base64.StdEncoding.EncodeToString(newFrame)
+
+			// 发送报文到网关
+			err = sendToGateway(meterID, base64Message)
+			if err != nil {
+				log.Printf("发送报文失败: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":  "error",
+					"message": "发送报文失败",
+				})
+				return
+			}
+		}
+	}
+	//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
@@ -98,14 +112,12 @@ func sendToGateway(topic string, message string) error {
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("构建 JSON Payload 失败: %v", err)
-		fmt.Printf("构建 JSON Payload 失败: %v\n", err)
 		return err
 	}
 
 	resp, err := http.Post("http://localhost:4366/publish", "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		log.Printf("发送 HTTP POST 请求失败: %v", err)
-		fmt.Printf("发送 HTTP POST 请求失败: %v\n", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -113,10 +125,37 @@ func sendToGateway(topic string, message string) error {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
 		log.Printf("网关返回错误状态码: %d, 响应体: %s", resp.StatusCode, string(body))
-		fmt.Printf("网关返回错误状态码: %d, 响应体: %s\n", resp.StatusCode, string(body))
 		return fmt.Errorf("网关返回错误状态码: %d", resp.StatusCode)
 	}
 
 	log.Printf("成功发送报文到网关")
+	return nil
+}
+
+// 订阅网关
+func subscribeToGateway(topic string) error {
+	payload := map[string]interface{}{
+		"topic": topic,
+	}
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("构建 JSON Payload 失败: %v", err)
+		return err
+	}
+
+	resp, err := http.Post("http://localhost:4366/subscribe", "application/json", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		log.Printf("发送 HTTP POST 请求失败: %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		log.Printf("网关返回错误状态码: %d, 响应体: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("网关返回错误状态码: %d", resp.StatusCode)
+	}
+
+	log.Printf("成功订阅主题: %s", topic)
 	return nil
 }
