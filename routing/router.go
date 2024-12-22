@@ -45,6 +45,8 @@ func Router() *gin.Engine {
 	//路由标记 mkdir
 	router.POST("/mkdir", handler.MkdirHandler)
 
+	router.POST("/send_report", handler.SendReportHandler)
+
 	// TODO 路由标记8:
 	//1.DLT645-2007协议解析栈 (ok)
 	// TODO 2.处理逻辑实现
