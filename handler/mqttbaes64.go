@@ -6,9 +6,14 @@ import (
 	"imgginaimqtt/dao"
 	"imgginaimqtt/mylink"
 	"imgginaimqtt/protocol_stack"
-	"io/ioutil"
 	"log"
 )
+
+// MQTT -> HTTP 消息结构
+type MQTTMessage struct {
+	Topic   string `json:"topic"`
+	Message string `json:"message"` // Base64 编码后的消息
+}
 
 // 用来保存电表结果
 var AmmeterMap = make(map[string]*dao.Ammeter)
@@ -22,15 +27,18 @@ func MqttBaes64Handler(c *gin.Context) {
 	}()
 
 	// 读取请求体
-	body, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(400, dao.ResponseEER_400("err"))
+	//body, err := ioutil.ReadAll(c.Request.Body)
+	//接收请求体,用结构体
+	var req MQTTMessage
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, dao.ResponseEER_400("Invalid request format"))
 		return
 	}
+
 	defer c.Request.Body.Close()
 
 	//bese64解码
-	bytes, err1 := protocol_stack.MyBase64ToBytes(string(body))
+	bytes, err1 := protocol_stack.MyBase64ToBytes(string(req.Message))
 	if err1 != nil {
 		respond(c, 400, "base64解码失败", nil)
 	}
@@ -104,5 +112,6 @@ func MqttBaes64Handler(c *gin.Context) {
 	// 将字符串保存到Redis
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 	//通知前端
-	dao.NoticeUpdate("123456")
+	//TODO 通知前端
+	dao.NoticeUpdate(req.Topic)
 }
