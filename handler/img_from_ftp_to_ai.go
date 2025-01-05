@@ -3,7 +3,6 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
@@ -15,13 +14,14 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 )
 
 type imgai struct {
 	Img_path string `json:"img_path"`
 }
+
+var ptr *dao.UpdataMacImg
 
 // 上传完图片通知
 // 路由5的处理器: 读取最新图片并发送给AI服务器
@@ -42,8 +42,10 @@ func UploadFtpHandler(c *gin.Context) {
 	//	c.JSON(400, dao.ResponseEER_400("Invalid request format"))
 	//	return
 	//}
+
 	// 标记2: 构造文件夹路径
-	ptr := dao.MacAddressStatus[id]
+
+	ptr = dao.MacAddressStatus[id]
 	lastUpdataTime := time.Now().UnixNano()
 
 	//填充当前时间
@@ -70,18 +72,18 @@ func UploadFtpHandler(c *gin.Context) {
 	//根据发过来的图片path获取图片
 
 	link, _ := mylink.GetredisLink()
-	//查询redis选择表类型
-	var tableType string
-	var aimodelName string
-	link.Client.HGet(link.Ctx, "type", id).Scan(&tableType)
+	//查询redis选择url
+	//var tableType string
+	var aimodelUrl string
+	link.Client.HGet(link.Ctx, "type", id).Scan(&aimodelUrl)
 
-	//查询redis选择ai模型
-	if tableType != "" {
-		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
-	} else {
-		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
-		return
-	}
+	////查询redis选择ai模型
+	//if tableType != "" {
+	//	link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
+	//} else {
+	//	respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
+	//	return
+	//}
 
 	//ch := make(chan int)
 	//启动匿名函数发送给ai
@@ -90,13 +92,13 @@ func UploadFtpHandler(c *gin.Context) {
 		//选择ai摸型
 		//查询AI地址
 		status := dao.MacAddressStatus[id]
-		aimodel, ok := dao.AimodelTable[aimodelName]
+		//aimodel:= dao.AimodelTable[aimodelName]
 
-		if !ok {
-			//没有此模型
-			log.Println(aimodelName, "没有此模型-------------------------------->>ERR>>>>")
-			return
-		}
+		//if !ok {
+		//	//没有此模型
+		//	log.Println(aimodelName, "没有此模型-------------------------------->>ERR>>>>")
+		//	return
+		//}
 		// 标记4: 发送图片给AI服务器,
 
 		//参数”img“
@@ -117,17 +119,17 @@ func UploadFtpHandler(c *gin.Context) {
 
 		//response, err2 := http.Post(aimodel.AimodelUrl, "application/json", strings.NewReader(imgpath))
 		//打印请求
-		fmt.Println("请求地址：", aimodel.AimodelUrl)
+		fmt.Println("请求地址：", aimodelUrl)
 		fmt.Println("请求参数：", imgpath)
 		//转json
 		jsonData, _ := json.Marshal(imgmaseg)
 		fmt.Println("请求参数：", string(jsonData))
 
-		response, err2 := http.Post(aimodel.AimodelUrl, "application/json", bytes.NewBuffer(jsonData))
+		response, err2 := http.Post(aimodelUrl, "application/json", bytes.NewBuffer(jsonData))
 		if err2 != nil {
 			//ch <- 600
 			//ch <- 600
-			log.Println(aimodel.AimodelName, "请求地址错误-------------------------------->>ERR>>>>", err2)
+			log.Println(aimodelUrl, "请求地址错误-------------------------------->>ERR>>>>", err2)
 			return
 		}
 		//判断code
@@ -144,12 +146,21 @@ func UploadFtpHandler(c *gin.Context) {
 			if err != nil {
 				return
 			}
+
 			// 标记5: 保存AI处理结果 到redis
 			link1.Client.HSet(link1.Ctx, "ai_value", id, string(body))
+
+			// 直接递增价格
+			_, err = link1.Client.HIncrBy(link1.Ctx, "Price", "price", 1).Result()
+			if err != nil {
+				log.Printf("在 Redis 中无法提高价格: %v\n", err)
+				return
+			}
+
 			//ch <- 600
 			//ch <- 600
 			// 标记6: 通知前端
-			dao.NoticeUpdate(id)
+			//dao.NoticeUpdate(id)
 		}
 
 	}()
@@ -220,24 +231,24 @@ func getLatestFile(dirPath string) (string, error) {
 	return latestFile.Name(), nil
 }
 
-func ParseJson(body string) (error, string) { //提取百度ai返回的json数据
-	//3_4 解析JSON
-	var meterResp MeterResponse
-	err := json.Unmarshal([]byte(body), &meterResp)
-	if err != nil {
-		return err, ""
-	}
-
-	// 3_5检查是否有"words"字段
-	if meterResp.WordsNum == 0 {
-		return errors.New("AI识别结果为空"), ""
-	}
-
-	// 3_6提取"words"字段并用逗号分隔
-	var words []string
-	for _, item := range meterResp.WordsList {
-		words = append(words, item.Words)
-	}
-	resultText := strings.Join(words, ",")
-	return nil, resultText
-}
+//func ParseJson(body string) (error, string) { //提取百度ai返回的json数据
+//	//3_4 解析JSON
+//	var meterResp MeterResponse
+//	err := json.Unmarshal([]byte(body), &meterResp)
+//	if err != nil {
+//		return err, ""
+//	}
+//
+//	// 3_5检查是否有"words"字段
+//	if meterResp.WordsNum == 0 {
+//		return errors.New("AI识别结果为空"), ""
+//	}
+//
+//	// 3_6提取"words"字段并用逗号分隔
+//	var words []string
+//	for _, item := range meterResp.WordsList {
+//		words = append(words, item.Words)
+//	}
+//	resultText := strings.Join(words, ",")
+//	return nil, resultText
+//}

@@ -3,6 +3,9 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
+	"time"
+	//"imgginaimqtt/disposition"
+	//"time"
 )
 
 // 询问是否需要上传图片
@@ -13,24 +16,29 @@ func DeviceRequestHandle(c *gin.Context) {
 	}
 
 	// 检查MAC地址是否存在
+	if ptr != nil {
+		checkAndModifyNeedImage(ptr)
 
-	status := dao.MacAddressStatus[id]
-	if status != nil {
-		//当前时间,用来做间隔时间上传
-		//UpdataTime := time.Now().UnixNano()
-		//|| (UpdataTime-status.LastUpdata) > int64(disposition.Interval)
-		if status.NeedsImage == "1" { // 检查是否需要图片
+		if ptr.NeedsImage == "1" { // 检查是否需要图片
 			c.JSON(211, dao.ResponseSuccess_211())
-			status.NeedsImage = "0"
 		} else {
 			//不需要
 			c.JSON(210, dao.ResponseSuccess_210())
 		}
 	} else {
-		//首次上传
+		//首次上传询问
 		dao.MacAddressStatus[id] = &dao.UpdataMacImg{}
 		c.JSON(211, dao.ResponseSuccess_211())
-
 	}
+}
 
+func checkAndModifyNeedImage(ptr *dao.UpdataMacImg) {
+	currentTime := time.Now().UnixNano()
+	timeDifference := currentTime - ptr.LastUpdata // 获取时间差（纳秒）
+	// 检查时间差是否大于5秒
+	if timeDifference > int64(5*time.Second) {
+		ptr.NeedsImage = "1"
+	} else {
+		ptr.NeedsImage = "0"
+	}
 }

@@ -23,7 +23,7 @@ func Router() *gin.Engine {
 	// 路由标记4: mqtt协议支持     需要搭配mqtt转http网关使用（暂未启用）
 	router.POST("/mqtt", handler.MqttHandler)
 
-	// 路由标记5: 图片上传成功触发AI识别(ftp图片上传)                       frmo ftp to 百度ai or YOLOU
+	// 路由标记5: 图片上传成功触发AI识别(ftp图片上传)                       from ftp to 百度ai or YOLOU
 	// TODO YOLOU 识别 上传nfs path 路径
 	router.POST("/upload_success", handler.UploadFtpHandler)
 
@@ -45,6 +45,7 @@ func Router() *gin.Engine {
 	//路由标记 mkdir
 	router.POST("/mkdir", handler.MkdirHandler)
 
+	//路由标记9:接收客户端信息，发送报告给网关
 	router.POST("/send_report", handler.SendReportHandler)
 
 	// TODO 路由标记8:
