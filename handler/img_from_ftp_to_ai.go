@@ -27,12 +27,15 @@ var ptr *dao.UpdataMacImg
 // 上传完图片通知
 // 路由5的处理器: 读取最新图片并发送给AI服务器
 func UploadFtpHandler(c *gin.Context) {
-
+	link, err := mylink.GetredisLink()
 	// 标记1: 获
 	//取mac字段
 	//用结构体接收
 	id := c.PostForm("id")
 	imgname := c.PostForm("imgname")
+
+	// 标记5: 保存图片路径
+	link.Client.HSet(link.Ctx, "Image", id, imgname)
 
 	if id == "" || imgname == "" {
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
@@ -72,7 +75,7 @@ func UploadFtpHandler(c *gin.Context) {
 
 	//根据发过来的图片path获取图片
 	// 获取 Redis 连接并处理错误
-	link, err := mylink.GetredisLink()
+	//link, err := mylink.GetredisLink()
 	if err != nil {
 		log.Printf("Failed to connect to Redis: %v", err)
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("Redis connection failed"))
