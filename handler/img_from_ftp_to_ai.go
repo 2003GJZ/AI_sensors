@@ -18,6 +18,7 @@ import (
 )
 
 type imgai struct {
+	Id       string `json:"id"`
 	Img_path string `json:"img_path"`
 }
 
@@ -70,25 +71,32 @@ func UploadFtpHandler(c *gin.Context) {
 	//}
 
 	//根据发过来的图片path获取图片
-
-	link, _ := mylink.GetredisLink()
+	// 获取 Redis 连接并处理错误
+	link, err := mylink.GetredisLink()
+	if err != nil {
+		log.Printf("Failed to connect to Redis: %v", err)
+		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("Redis connection failed"))
+		return
+	}
+	//link, _ := mylink.GetredisLink()
 	//查询redis选择url
-	//var tableType string
-	var aimodelUrl string
-	link.Client.HGet(link.Ctx, "type", id).Scan(&aimodelUrl)
+	var tableType string
+	var aimodelName string
+	link.Client.HGet(link.Ctx, "type", id).Scan(&tableType)
 
-	////查询redis选择ai模型
-	//if tableType != "" {
-	//	link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
-	//} else {
-	//	respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
-	//	return
-	//}
-
+	//查询redis选择ai模型
+	if tableType != "" {
+		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
+	} else {
+		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
+		return
+	}
+	//aimodelName = "192.168.157.96:5000" + aimodelName
+	//fmt.Println(aimodelName)
 	//ch := make(chan int)
 	//启动匿名函数发送给ai
 	go func() {
-		link1, _ := mylink.GetredisLink()
+		//link1, _ := mylink.GetredisLink()
 		//选择ai摸型
 		//查询AI地址
 		status := dao.MacAddressStatus[id]
@@ -103,33 +111,36 @@ func UploadFtpHandler(c *gin.Context) {
 
 		//参数”img“
 		imgmaseg := imgai{
+			Id:       "",
 			Img_path: "",
 			//Data:     "",
 		}
-		imgpath := disposition.FtpPathex + "//" + id + "//" + imgname
+		imgpath := imgname
 
 		// imgpath := "D:\\\\PythonProject\\\\Project\\\\lige\\\\PythonProject2\\\\static\\\\indicator\\\\H1L12A.jpg"
 		// imgmaseg.Data = "{\"indicator_center_list\": [[89, 131], [195, 133], [301, 133], [411, 133], [84, 238], [192, 238], [300, 241], [410, 242]], \"indicator_namelist\": [\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"]}"
 
 		//参数body
+		imgmaseg.Id = id
 		imgmaseg.Img_path = imgpath
+		fmt.Println("id:", imgmaseg.Id, "imgname:", imgmaseg.Img_path)
 		//var tabe string
 		//link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)
 		//imgmaseg.Data = tabe
 
 		//response, err2 := http.Post(aimodel.AimodelUrl, "application/json", strings.NewReader(imgpath))
 		//打印请求
-		fmt.Println("请求地址：", aimodelUrl)
+		fmt.Println("请求地址：", aimodelName)
 		fmt.Println("请求参数：", imgpath)
 		//转json
 		jsonData, _ := json.Marshal(imgmaseg)
 		fmt.Println("请求参数：", string(jsonData))
 
-		response, err2 := http.Post(aimodelUrl, "application/json", bytes.NewBuffer(jsonData))
+		response, err2 := http.Post(aimodelName, "application/json", bytes.NewBuffer(jsonData))
 		if err2 != nil {
 			//ch <- 600
 			//ch <- 600
-			log.Println(aimodelUrl, "请求地址错误-------------------------------->>ERR>>>>", err2)
+			log.Println(aimodelName, "请求地址错误-------------------------------->>ERR>>>>", err2)
 			return
 		}
 		//判断code
@@ -141,21 +152,13 @@ func UploadFtpHandler(c *gin.Context) {
 			//ch <- 601
 			//ch <- 601
 		} else {
-			//读出返回的数据
-			body, err := ioutil.ReadAll(response.Body)
+			////读出返回的数据
+			_, err := ioutil.ReadAll(response.Body)
 			if err != nil {
 				return
 			}
-
-			// 标记5: 保存AI处理结果 到redis
-			link1.Client.HSet(link1.Ctx, "ai_value", id, string(body))
-
-			// 直接递增价格
-			_, err = link1.Client.HIncrBy(link1.Ctx, "Price", "price", 1).Result()
-			if err != nil {
-				log.Printf("在 Redis 中无法提高价格: %v\n", err)
-				return
-			}
+			//// 标记5: 保存AI处理结果 到redis
+			//link1.Client.HSet(link1.Ctx, "ai_value", id, string(body))
 
 			//ch <- 600
 			//ch <- 600
