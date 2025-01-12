@@ -34,13 +34,19 @@ func UploadFtpHandler(c *gin.Context) {
 	id := c.PostForm("id")
 	imgname := c.PostForm("imgname")
 
-	// 标记5: 保存图片路径
-	link.Client.HSet(link.Ctx, "Image", id, imgname)
+	//fmt.Println("id:", id)
+	//fmt.Println("imgname:", imgname)
 
 	if id == "" || imgname == "" {
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
 		return
 	}
+
+	imgname = "http://114.55.232.250:4398/images/" + imgname
+
+	// 标记5: 保存图片路径
+	link.Client.HSet(link.Ctx, "Image", id, imgname)
+
 	//var req dao.Request
 	//if err := c.ShouldBindJSON(&req); err != nil {
 	//	c.JSON(400, dao.ResponseEER_400("Invalid request format"))
@@ -94,7 +100,16 @@ func UploadFtpHandler(c *gin.Context) {
 		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
 		return
 	}
-	//aimodelName = "192.168.157.96:5000" + aimodelName
+
+	// 访问 AI_Model_1 模型
+	model := dao.AimodelTable[aimodelName]
+	aimodelName = model.AimodelUrl
+
+	// 打印模型信息
+	//fmt.Printf("Model URL: %s\n", model.AimodelUrl)
+	//fmt.Printf("Model Name: %s\n", model.AimodelName)
+
+	//aimodelName = "192.168.157.96:5000/" + aimodelName
 	//fmt.Println(aimodelName)
 	//ch := make(chan int)
 	//启动匿名函数发送给ai

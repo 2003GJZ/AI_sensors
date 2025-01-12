@@ -70,6 +70,7 @@ func SendReportHandler(c *gin.Context) {
 	// 循环遍历 Data 结构体中的字段
 	for fieldName, fieldData := range fieldCommandMap {
 		fieldValue := reflect.ValueOf(requestBody.Data).FieldByName(fieldName).String()
+		//fmt.Println(fieldCommandMap)
 		if fieldValue != "" {
 			newFrame, err = protocol_stack.BuildDLT645Frame(meterID, fieldData.Command, fieldData.Data)
 			if err != nil {

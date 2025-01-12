@@ -26,7 +26,7 @@ func GetAitoRedis(c *gin.Context) {
 	link1.Client.HSet(link1.Ctx, "ai_value", aiRespones.DeviceID, aiRespones.Data)
 
 	//直接递增价格
-	_, err = link1.Client.HIncrBy(link1.Ctx, "increment_results", "ai_all_num", 1).Result()
+	_, err = link1.Client.HIncrBy(link1.Ctx, "increment_results", "ai_num", 1).Result()
 	if err != nil {
 		log.Printf("在 Redis 中无法提高价格: %v\n", err)
 		return
