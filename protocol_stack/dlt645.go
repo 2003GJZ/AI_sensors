@@ -66,6 +66,11 @@ func ElectricityAnswer(rawData []byte) (error, []byte) {
 		return errors.New("电表响应标识错误"), nil
 	}
 
+	// 确保返回有效的 []byte
+	if len(rawData) < 5 {
+		return errors.New("数据帧长度不足"), nil
+	}
+
 	return nil, rawData[4:]
 }
 
