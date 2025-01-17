@@ -2,6 +2,8 @@ package protocol_stack
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -58,12 +60,22 @@ func TestBuildDLT645Frame(t *testing.T) {
 	fmt.Printf("生成的新数据帧: %X\n", newFrame)
 }
 func TestParseDataSegment(t *testing.T) {
+
+	hexKey := "00-00-00-00"
+	byteArray, err := HexKeyToByteArray(hexKey)
+	if err != nil {
+		fmt.Printf("转换失败: %v\n", err)
+	} else {
+		// 使用 %02X 格式化每个字节为两位十六进制数，并用空格分隔
+		fmt.Printf("转换成功: %02X %02X %02X %02X\n", byteArray[0], byteArray[1], byteArray[2], byteArray[3])
+	}
+
 	// 地址
 	address := "600792040091"
 	// 控制码
 	control := byte(0x11)
 	// 数据域
-	data := []byte{0x33, 0x33, 0x33, 0x33}
+	data := byteArray
 
 	// 构建标准DLT645帧
 	frame, err := BuildDLT645Frame(address, control, data)
@@ -74,4 +86,28 @@ func TestParseDataSegment(t *testing.T) {
 
 	// 打印生成的帧
 	fmt.Printf("生成的新数据帧: %X\n", frame)
+
+}
+
+// HexKeyToByteArrayWithOffset 将字符串键转换为字节数组，并对每个字节加上偏移量 0x33
+func HexKeyToByteArray(hexKey string) ([]byte, error) {
+	// 分割字符串
+	parts := strings.Split(hexKey, "-")
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("无效的 hexKey 格式: %s", hexKey)
+	}
+
+	// 初始化字节数组
+	byteArray := make([]byte, 4)
+
+	// 转换每个部分为字节并加上偏移量 0x33
+	for i, part := range parts {
+		value, err := strconv.ParseUint(part, 16, 8)
+		if err != nil {
+			return nil, fmt.Errorf("解析部分 %s 失败: %v", part, err)
+		}
+		byteArray[i] = byte(value) + 0x33
+	}
+
+	return byteArray, nil
 }

@@ -20,6 +20,13 @@ import (
 type imgai struct {
 	Id       string `json:"id"`
 	Img_path string `json:"img_path"`
+	Range    string `json:"range"`
+}
+
+// 结构体来接收请求参数
+type ImageRequest struct {
+	ID      string `form:"id"`
+	ImgName string `form:"imgname"`
 }
 
 var ptr *dao.UpdataMacImg
@@ -31,11 +38,18 @@ func UploadFtpHandler(c *gin.Context) {
 	// 标记1: 获
 	//取mac字段
 	//用结构体接收
-	id := c.PostForm("id")
-	imgname := c.PostForm("imgname")
+	var req ImageRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	//fmt.Println("id:", id)
-	//fmt.Println("imgname:", imgname)
+	// 现在你可以通过 req.ID 和 req.ImgName 来访问这些数据
+	id := req.ID
+	imgname := req.ImgName
+
+	fmt.Println("id:", id)
+	fmt.Println("imgname:", imgname)
 
 	if id == "" || imgname == "" {
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))
@@ -131,6 +145,7 @@ func UploadFtpHandler(c *gin.Context) {
 		imgmaseg := imgai{
 			Id:       "",
 			Img_path: "",
+			Range:    "",
 			//Data:     "",
 		}
 		imgpath := imgname
@@ -141,6 +156,9 @@ func UploadFtpHandler(c *gin.Context) {
 		//参数body
 		imgmaseg.Id = id
 		imgmaseg.Img_path = imgpath
+		var meterRange string
+		link.Client.HGet(link.Ctx, "status", id).Scan(&meterRange)
+		imgmaseg.Range = meterRange
 		fmt.Println("id:", imgmaseg.Id, "imgname:", imgmaseg.Img_path)
 		//var tabe string
 		//link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)

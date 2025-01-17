@@ -6,28 +6,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"imgginaimqtt/dao"
 	"imgginaimqtt/protocol_stack"
-	_ "imgginaimqtt/protocol_stack"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"reflect"
+	"strconv"
+	"strings"
 )
 
 // 发送报文到网关
 func SendReportHandler(c *gin.Context) {
-	var requestBody struct {
-		MeterID string `json:"meter_id"`
-		Data    struct {
-			ACurrent string `json:"ACurrent"`
-			BCurrent string `json:"BCurrent"`
-			CCurrent string `json:"CCurrent"`
-			AVoltage string `json:"AVoltage"`
-			BVoltage string `json:"BVoltage"`
-			CVoltage string `json:"CVoltage"`
-			Power    string `json:"Power"`
-		} `json:"data"`
-	}
+
+	var requestBody dao.Message
 	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		log.Printf("请求参数绑定失败: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -37,7 +28,7 @@ func SendReportHandler(c *gin.Context) {
 		return
 	}
 
-	meterID := requestBody.MeterID
+	meterID := requestBody.DeviceID
 	if meterID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -50,52 +41,53 @@ func SendReportHandler(c *gin.Context) {
 		log.Fatalf("订阅主题失败: %v", err1)
 	}
 	//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// 定义字段与命令码的映射
-	fieldCommandMap := map[string]struct {
-		Command byte
-		Data    []byte
-	}{
-		"ACurrent": {0x11, []byte{0x00, 0x00, 0x01, 0x02}},
-		"BCurrent": {0x12, []byte{0x00, 0x00, 0x01, 0x03}},
-		"CCurrent": {0x13, []byte{0x00, 0x00, 0x01, 0x04}},
-		"AVoltage": {0x14, []byte{0x00, 0x00, 0x01, 0x05}},
-		"BVoltage": {0x15, []byte{0x00, 0x00, 0x01, 0x06}},
-		"CVoltage": {0x16, []byte{0x00, 0x00, 0x01, 0x07}},
-		"Power":    {0x17, []byte{0x00, 0x00, 0x01, 0x08}},
+
+	hexKey, exists := protocol_stack.GetKeyByDescription(requestBody.Data)
+	if exists != nil {
+		log.Printf("错误: %v\n", exists)
+	} else {
+		log.Printf("找到的键: %s\n", hexKey)
 	}
+
+	byteArray, err := HexKeyToByteArray(hexKey)
+	if err != nil {
+		log.Printf("转换失败: %v\n", err)
+	} else {
+		log.Printf("转换成功: %v\n", byteArray)
+	}
+
+	// 地址
+	address := meterID
+	// 控制码
+	control := byte(0x11)
+	// 数据域
+	data := byteArray
 
 	var newFrame []byte
-	var err error
 
-	// 循环遍历 Data 结构体中的字段
-	for fieldName, fieldData := range fieldCommandMap {
-		fieldValue := reflect.ValueOf(requestBody.Data).FieldByName(fieldName).String()
-		//fmt.Println(fieldCommandMap)
-		if fieldValue != "" {
-			newFrame, err = protocol_stack.BuildDLT645Frame(meterID, fieldData.Command, fieldData.Data)
-			if err != nil {
-				log.Printf("生成失败: %v\n", err)
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"status":  "error",
-					"message": "生成帧失败",
-				})
-				return
-			}
-			// 对 JSON 字符串进行 Base64 编码
-			base64Message := base64.StdEncoding.EncodeToString(newFrame)
-
-			// 发送报文到网关
-			err = sendToGateway(meterID, base64Message)
-			if err != nil {
-				log.Printf("发送报文失败: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"status":  "error",
-					"message": "发送报文失败",
-				})
-				return
-			}
-		}
+	newFrame, err = protocol_stack.BuildDLT645Frame(address, control, data)
+	if err != nil {
+		log.Printf("生成失败: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "生成帧失败",
+		})
+		return
 	}
+	// 对 JSON 字符串进行 Base64 编码
+	base64Message := base64.StdEncoding.EncodeToString(newFrame)
+
+	// 发送报文到网关
+	err = sendToGateway(meterID, base64Message)
+	if err != nil {
+		log.Printf("发送报文失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "发送报文失败",
+		})
+		return
+	}
+
 	//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	// 返回成功响应
@@ -159,4 +151,27 @@ func subscribeToGateway(topic string) error {
 
 	log.Printf("成功订阅主题: %s", topic)
 	return nil
+}
+
+// HexKeyToByteArray 将字符串键转换为字节数组
+func HexKeyToByteArray(hexKey string) ([]byte, error) {
+	// 分割字符串
+	parts := strings.Split(hexKey, "-")
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("无效的 hexKey 格式: %s", hexKey)
+	}
+
+	// 初始化字节数组
+	byteArray := make([]byte, 4)
+
+	// 转换每个部分为字节并加上偏移量 0x33
+	for i, part := range parts {
+		value, err := strconv.ParseUint(part, 16, 8)
+		if err != nil {
+			return nil, fmt.Errorf("解析部分 %s 失败: %v", part, err)
+		}
+		byteArray[i] = byte(value) + 0x33
+	}
+
+	return byteArray, nil
 }

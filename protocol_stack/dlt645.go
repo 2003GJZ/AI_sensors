@@ -192,6 +192,16 @@ var dataIdentifierTable = map[string]DataIdentifier{
 	"00-C2-00-00": {"XXXXXX.XX", 4, "kWh", "(当前)C相铁损有功电能补偿量", "J", "C"},
 }
 
+// GetKeyByDescription 根据 Description 获取 dataIdentifierTable 中的键
+func GetKeyByDescription(description string) (string, error) {
+	for key, identifier := range dataIdentifierTable {
+		if identifier.Description == description {
+			return key, nil
+		}
+	}
+	return "", fmt.Errorf("未找到 Description 为 %s 的 DataIdentifier", description)
+}
+
 func init() {
 	// 循环生成组合有功费率条目
 	for i := 1; i <= 63; i++ {
