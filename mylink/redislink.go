@@ -19,7 +19,7 @@ func NewRedisLink(databasenum int) (*RedisLink, error) {
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
-		Password: "",
+		Password: "meter@aly",
 		DB:       databasenum, // 默认数据库为 0
 	})
 	// 测试链接

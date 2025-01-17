@@ -16,8 +16,8 @@ type MQTTMessage struct {
 	Message string `json:"message"` // Base64 编码后的消息
 }
 
-// 用来保存电表结果
-var AmmeterMap = make(map[string]*dao.Ammeter)
+// 用来哈希表存哈希表
+var AmmeterMap = make(map[string]map[string]string)
 
 // MQTT 处理器
 
@@ -45,6 +45,7 @@ func MqttBaes64Handler(c *gin.Context) {
 	if err != nil {
 		respond(c, 400, "base64解码失败", nil)
 	}
+
 	//dlt协议解析
 	err, i := protocol_stack.ElectricityAnswer(bytes)
 	if err != nil {
@@ -55,7 +56,7 @@ func MqttBaes64Handler(c *gin.Context) {
 	// 数据域去偏移
 	decodedData := protocol_stack.OffsetData(frame.Data, false)
 	// 调用解析函数
-	dataType, value, phase, err := protocol_stack.ParseDataSegment(decodedData)
+	description, value, phase, err := protocol_stack.ParseDataSegment(decodedData)
 
 	if err != nil {
 		log.Printf("解析失败: %v\n", err)
@@ -63,55 +64,62 @@ func MqttBaes64Handler(c *gin.Context) {
 		return
 	}
 
-	log.Printf("解析结果: 类型 = %s, 值 = %s, 相位 = %s\n", dataType, value, phase)
-	//查询Map
+	log.Printf("解析结果: 类型 = %s, 值 = %s, 相位 = %s\n", description, value, phase)
+
+	// 查询Map
 	ammeter, ok := AmmeterMap[frame.Address]
 	if !ok {
 		// 如果不存在，则创建一个新的电表对象并添加到Map中
-		AmmeterMap[frame.Address] = &dao.Ammeter{DeviceID: frame.Address}
+		AmmeterMap[frame.Address] = map[string]string{
+			description: value,
+			// 初始化其他字段，如果有的话
+		}
 		ammeter = AmmeterMap[frame.Address]
+	} else {
+		ammeter[description] = value
 	}
-	// 更新电表对象
-	switch dataType {
-	case "I":
-		switch phase {
-		case "A":
-			ammeter.ACurrent = value
-		case "B":
-			ammeter.BCurrent = value
-		case "C":
-			ammeter.CCurrent = value
-		case "O":
-			ammeter.Current = value
-		}
 
-	case "V":
-		switch phase {
-		case "A":
-			ammeter.AVoltage = value
-		case "B":
-			ammeter.BVoltage = value
-		case "C":
-			ammeter.CVoltage = value
-		case "O":
-			ammeter.Voltage = value
-		}
-
-	case "P":
-		ammeter.Power = value
-	}
+	//// 更新电表对象
+	//switch dataType {
+	//case "I":
+	//	switch phase {
+	//	case "A":
+	//		ammeter.ACurrent = value
+	//	case "B":
+	//		ammeter.BCurrent = value
+	//	case "C":
+	//		ammeter.CCurrent = value
+	//	case "O":
+	//		ammeter.Current = value
+	//	}
+	//
+	//case "V":
+	//	switch phase {
+	//	case "A":
+	//		ammeter.AVoltage = value
+	//	case "B":
+	//		ammeter.BVoltage = value
+	//	case "C":
+	//		ammeter.CVoltage = value
+	//	case "O":
+	//		ammeter.Voltage = value
+	//	}
+	//
+	//case "P":
+	//	ammeter.Power = value
+	//}
 
 	// 保存到Redis-------->
 	// 将结构体转换为JSON
+	ammeter, _ = AmmeterMap[frame.Address]
 	jsonData, _ := json.Marshal(ammeter)
 
 	// 将JSON数据转换为字符串
 	jsonString := string(jsonData)
 	//TODO 将字符串保存到Redis
-	ammeter.DeviceID = "123456"
-
+	log.Println(jsonString)
 	link, _ := mylink.GetredisLink()
-	link.Client.HSet(link.Ctx, "ai_value", "123456", jsonString)
+	link.Client.HSet(link.Ctx, "ai_value", req.Topic, jsonString)
 	// 将字符串保存到Redis
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 	//通知前端

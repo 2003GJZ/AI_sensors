@@ -8,3 +8,5 @@ var MacAddressStatus = map[string]*UpdataMacImg{}
 
 // aimodel表
 var AimodelTable = map[string]Aimodel{}
+
+var BaowenMap = map[string]string{}

@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
+	"imgginaimqtt/mylink"
 	"imgginaimqtt/protocol_stack"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // 发送报文到网关
@@ -36,10 +38,12 @@ func SendReportHandler(c *gin.Context) {
 		})
 		return
 	}
+
 	err1 := subscribeToGateway(meterID)
 	if err1 != nil {
 		log.Fatalf("订阅主题失败: %v", err1)
 	}
+
 	//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	hexKey, exists := protocol_stack.GetKeyByDescription(requestBody.Data)
@@ -55,9 +59,20 @@ func SendReportHandler(c *gin.Context) {
 	} else {
 		log.Printf("转换成功: %v\n", byteArray)
 	}
+	link, _ := mylink.GetredisLink()
+	//地址
+	var metermac string
 
-	// 地址
-	address := meterID
+	link.Client.HGet(link.Ctx, "topic", meterID).Scan(&metermac)
+
+	if metermac == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "未找到 meter_id 对应的 mac 地址",
+		})
+		return
+	}
+
 	// 控制码
 	control := byte(0x11)
 	// 数据域
@@ -65,7 +80,7 @@ func SendReportHandler(c *gin.Context) {
 
 	var newFrame []byte
 
-	newFrame, err = protocol_stack.BuildDLT645Frame(address, control, data)
+	newFrame, err = protocol_stack.BuildDLT645Frame(metermac, control, data)
 	if err != nil {
 		log.Printf("生成失败: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -77,8 +92,16 @@ func SendReportHandler(c *gin.Context) {
 	// 对 JSON 字符串进行 Base64 编码
 	base64Message := base64.StdEncoding.EncodeToString(newFrame)
 
+	//meterID = meterID
+
+	//fmt.Println("发送报文到网关:", meterID, "///", base64Message)
+
+	//id_V	:	报文
+	key := meterID + "_" + requestBody.Data
+	dao.BaowenMap[key] = base64Message
+
 	// 发送报文到网关
-	err = sendToGateway(meterID, base64Message)
+	err = SendToGateway(meterID, base64Message)
 	if err != nil {
 		log.Printf("发送报文失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -97,7 +120,8 @@ func SendReportHandler(c *gin.Context) {
 	})
 }
 
-func sendToGateway(topic string, message string) error {
+func SendToGateway(topic string, message string) error {
+	topic = "/down/" + topic
 	payload := map[string]interface{}{
 		"topic":   topic,
 		"message": message,
@@ -107,7 +131,7 @@ func sendToGateway(topic string, message string) error {
 		log.Printf("构建 JSON Payload 失败: %v", err)
 		return err
 	}
-
+	//fmt.Println("发送报文到网关:", topic, "///", message)
 	resp, err := http.Post("http://localhost:4366/publish", "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		log.Printf("发送 HTTP POST 请求失败: %v", err)
@@ -125,31 +149,31 @@ func sendToGateway(topic string, message string) error {
 	return nil
 }
 
-// 订阅网关
+// 网关订阅
 func subscribeToGateway(topic string) error {
-	payload := map[string]interface{}{
+	topic = "/up/" + topic
+	// 定义要发送的订阅请求
+	subscribeRequest := map[string]string{
 		"topic": topic,
 	}
-	jsonPayload, err := json.Marshal(payload)
+
+	// 将请求体编码为 JSON
+	jsonData, err := json.Marshal(subscribeRequest)
 	if err != nil {
-		log.Printf("构建 JSON Payload 失败: %v", err)
-		return err
+		fmt.Printf("编码 JSON 失败: %v\n", err)
+		return nil
 	}
 
-	resp, err := http.Post("http://localhost:4366/subscribe", "application/json", bytes.NewBuffer(jsonPayload))
+	// 创建 HTTP POST 请求
+	resp, err := http.Post("http://47.96.91.185:4366/subscribe", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("发送 HTTP POST 请求失败: %v", err)
-		return err
+		fmt.Printf("发送 POST 请求失败: %v\n", err)
+		return nil
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		log.Printf("网关返回错误状态码: %d, 响应体: %s", resp.StatusCode, string(body))
-		return fmt.Errorf("网关返回错误状态码: %d", resp.StatusCode)
-	}
-
-	log.Printf("成功订阅主题: %s", topic)
+	// 打印响应状态码
+	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
 	return nil
 }
 
@@ -172,6 +196,36 @@ func HexKeyToByteArray(hexKey string) ([]byte, error) {
 		}
 		byteArray[i] = byte(value) + 0x33
 	}
+	// 反转字节数组
+	for i, j := 0, len(byteArray)-1; i < j; i, j = i+1, j-1 {
+		byteArray[i], byteArray[j] = byteArray[j], byteArray[i]
+	}
 
 	return byteArray, nil
+}
+func BaowenMapFor() {
+	for {
+		for key, value := range dao.BaowenMap {
+			// 使用Split函数按照下划线分割
+			parts := strings.Split(key, "_")
+			// 检查分割结果
+			if len(parts) == 2 {
+				topic := parts[0]
+				// 发送报文到网关
+				err := SendToGateway(topic, value)
+				if err != nil {
+					log.Println("发送报文失败: %v", err)
+					return
+				}
+			} else {
+				log.Println("字符串格式不正确")
+			}
+			//停止1秒
+			time.Sleep(1 * time.Second)
+		}
+		//停止120秒
+		time.Sleep(120 * time.Second)
+
+	}
+
 }

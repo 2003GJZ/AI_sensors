@@ -144,9 +144,7 @@ func MqttHandler(c *gin.Context) {
 		return
 	}
 	defer c.Request.Body.Close()
-
 	//bese64解码
 	body, _ = protocol_stack.MyBase64ToBytes(string(body))
-
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 }

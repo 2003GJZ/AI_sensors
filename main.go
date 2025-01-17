@@ -72,6 +72,9 @@ func init() {
 	if err != nil {
 		log.Fatalf("无法打开日志文件: %v", err)
 	}
+
+	//写一个hashmap存字符串
+	dao.BaowenMap = make(map[string]string)
 }
 
 // 主函数入口

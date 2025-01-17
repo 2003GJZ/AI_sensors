@@ -20,7 +20,7 @@ const Offset byte = 0x33 // 偏移量
 // ParseDLT645Frame 解析DLT645协议数据帧
 func ParseDLT645Frame(rawData []byte) (*DLT645Frame, error) {
 	if len(rawData) < 12 {
-		return nil, errors.New("数据帧长度不足")
+		return nil, errors.New("去FE后数据帧长度不足")
 	}
 	// 检查帧头和帧尾
 	if rawData[0] != 0x68 || rawData[7] != 0x68 || rawData[len(rawData)-1] != 0x16 {
@@ -67,19 +67,21 @@ func ElectricityAnswer(rawData []byte) (error, []byte) {
 	}
 
 	// 确保返回有效的 []byte
-	if len(rawData) < 5 {
-		return errors.New("数据帧长度不足"), nil
-	}
+	//if len(rawData) < 5 {
+	//	return errors.New("数据帧长度不足"), nil
+	//}
 
 	return nil, rawData[4:]
 }
 
-// calculateChecksum 计算校验码
+// calculateChecksum 计算校验码 使用无符号byte
+
 func calculateChecksum(data []byte) byte {
 	var sum byte
 	for _, b := range data {
 		sum += b
 	}
+
 	return sum
 }
 
@@ -108,18 +110,18 @@ type DataIdentifier struct {
 
 // 数据标识表，根据图片内容完全构建
 var dataIdentifierTable = map[string]DataIdentifier{
-	"02-01-01-00": {"XXX.X", 2, "V", "A相电压", "V", "A"},
-	"02-01-02-00": {"XXX.X", 2, "V", "B相电压", "V", "B"},
-	"02-01-03-00": {"XXX.X", 2, "V", "C相电压", "V", "C"},
-	"02-01-FF-00": {"XXX.X", 2, "V", "电压数据块", "V", "O"},
-	"02-02-01-00": {"XXX.XXX", 3, "A", "A相电流", "I", "A"},
-	"02-02-02-00": {"XXX.XXX", 3, "A", "B相电流", "I", "B"},
-	"02-02-03-00": {"XXX.XXX", 3, "A", "C相电流", "I", "C"},
-	"02-02-FF-00": {"XXX.XXX", 3, "A", "电流数据块", "I", "O"},
-	"02-03-00-00": {"XX.XXXX", 3, "kW", "瞬时总有功功率", "P", "O"},
-	"02-03-01-00": {"XX.XXXX", 3, "kW", "瞬时A有功功率", "P", "A"},
-	"02-03-02-00": {"XX.XXXX", 3, "kW", "瞬时B有功功率", "P", "B"},
-	"02-03-03-00": {"XX.XXXX", 3, "kW", "瞬时C有功功率", "P", "C"},
+	//"02-01-01-00": {"XXX.X", 2, "V", "A相电压", "V", "A"},
+	//"02-01-02-00": {"XXX.X", 2, "V", "B相电压", "V", "B"},
+	//"02-01-03-00": {"XXX.X", 2, "V", "C相电压", "V", "C"},
+	//"02-01-FF-00": {"XXX.X", 2, "V", "电压数据块", "V", "O"},
+	//"02-02-01-00": {"XXX.XXX", 3, "A", "A相电流", "I", "A"},
+	//"02-02-02-00": {"XXX.XXX", 3, "A", "B相电流", "I", "B"},
+	//"02-02-03-00": {"XXX.XXX", 3, "A", "C相电流", "I", "C"},
+	//"02-02-FF-00": {"XXX.XXX", 3, "A", "电流数据块", "I", "O"},
+	//"02-03-00-00": {"XX.XXXX", 3, "kW", "瞬时总有功功率", "P", "O"},
+	//"02-03-01-00": {"XX.XXXX", 3, "kW", "瞬时A有功功率", "P", "A"},
+	//"02-03-02-00": {"XX.XXXX", 3, "kW", "瞬时B有功功率", "P", "B"},
+	//"02-03-03-00": {"XX.XXXX", 3, "kW", "瞬时C有功功率", "P", "C"},
 
 	"00-00-00-00": {"XXXXXX.XX", 4, "kWh", "(当前)组合有功总电能", "J", "O"},
 	"00-01-00-00": {"XXXXXX.XX", 4, "kWh", "(当前)正向有功总电能", "J", "O"},
@@ -406,7 +408,7 @@ func ParseDataSegment(data []byte) (string, string, string, error) {
 	}
 
 	// 返回解析结果
-	return diInfo.Type, value, diInfo.Phase, nil
+	return diInfo.Description, value, diInfo.Phase, nil
 }
 
 // InsertDot 函数在字符串的第n个字符后面插入一个小数点

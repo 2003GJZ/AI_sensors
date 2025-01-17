@@ -48,8 +48,8 @@ func UploadFtpHandler(c *gin.Context) {
 	id := req.ID
 	imgname := req.ImgName
 
-	fmt.Println("id:", id)
-	fmt.Println("imgname:", imgname)
+	//fmt.Println("id:", id)
+	//fmt.Println("imgname:", imgname)
 
 	if id == "" || imgname == "" {
 		c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("not mac error"))

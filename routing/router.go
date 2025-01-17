@@ -54,6 +54,8 @@ func Router() *gin.Engine {
 	// TODO 路由标记8:
 	//1.DLT645-2007协议解析栈 (ok)
 	// TODO 2.处理逻辑实现
+	//启动轮询
+	go handler.BaowenMapFor()
 
 	return router
 
