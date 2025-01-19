@@ -21,6 +21,7 @@ type imgai struct {
 	Id       string `json:"id"`
 	Img_path string `json:"img_path"`
 	Range    string `json:"range"`
+	Istailor string `json:"istailor"`
 }
 
 // 结构体来接收请求参数
@@ -146,7 +147,7 @@ func UploadFtpHandler(c *gin.Context) {
 			Id:       "",
 			Img_path: "",
 			Range:    "",
-			//Data:     "",
+			Istailor: "",
 		}
 		imgpath := imgname
 
@@ -156,10 +157,13 @@ func UploadFtpHandler(c *gin.Context) {
 		//参数body
 		imgmaseg.Id = id
 		imgmaseg.Img_path = imgpath
-		var meterRange string
-		link.Client.HGet(link.Ctx, "status", id).Scan(&meterRange)
-		imgmaseg.Range = meterRange
-		fmt.Println("id:", imgmaseg.Id, "imgname:", imgmaseg.Img_path)
+		link.Client.HGet(link.Ctx, "status", id).Scan(&imgmaseg.Range)
+		link.Client.HGet(link.Ctx, "istailor", id).Scan(&imgmaseg.Istailor)
+		if imgmaseg.Istailor == "" {
+			imgmaseg.Istailor = "yes"
+		}
+
+		log.Println("id:", imgmaseg.Id, "imgname:", imgmaseg.Img_path)
 		//var tabe string
 		//link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)
 		//imgmaseg.Data = tabe

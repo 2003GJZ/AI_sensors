@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
+	"imgginaimqtt/disposition"
 	"imgginaimqtt/mylink"
 	"imgginaimqtt/protocol_stack"
 	"log"
+	"strings"
+	"time"
 )
 
 // MQTT -> HTTP 消息结构
@@ -71,12 +74,13 @@ func MqttBaes64Handler(c *gin.Context) {
 	if !ok {
 		// 如果不存在，则创建一个新的电表对象并添加到Map中
 		AmmeterMap[frame.Address] = map[string]string{
-			description: value,
+			description: value + "$" + time.Now().Format("2006-01-02 15:04:05"),
+
 			// 初始化其他字段，如果有的话
 		}
 		ammeter = AmmeterMap[frame.Address]
 	} else {
-		ammeter[description] = value
+		ammeter[description] = value + "$" + time.Now().Format("2006-01-02 15:04:05")
 	}
 
 	//// 更新电表对象
@@ -120,8 +124,19 @@ func MqttBaes64Handler(c *gin.Context) {
 	log.Println(jsonString)
 	link, _ := mylink.GetredisLink()
 	link.Client.HSet(link.Ctx, "ai_value", req.Topic, jsonString)
+
+	meterLogName := "Ammeter_" + strings.ReplaceAll(req.Topic, "/", "_") + ".log"
+	// 保存到日志-------->
+	err = saveResult(jsonString, disposition.AiResultsDir, meterLogName)
+	if err != nil {
+		log.Println("保存电表处理结果到文件失败-------------------------------->>ERR>>>>", err)
+		return
+	}
+	//fmt.Println("保存电表处理结果到文件成功:", disposition.AiResultsDir)
+
 	// 将字符串保存到Redis
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
+
 	//通知前端
 	//TODO 通知前端
 	dao.NoticeUpdate(req.Topic)

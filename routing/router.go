@@ -51,6 +51,9 @@ func Router() *gin.Engine {
 	//路由标记10：获取ai识别结果存到redis
 	router.POST("/ai_redis", handler.GetAitoRedis)
 
+	//路由标记11：获取日志
+	router.POST("/getlogs", handler.GetLogHandler)
+
 	// TODO 路由标记8:
 	//1.DLT645-2007协议解析栈 (ok)
 	// TODO 2.处理逻辑实现

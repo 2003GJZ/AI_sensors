@@ -58,20 +58,29 @@ func ParseDLT645Frame(rawData []byte) (*DLT645Frame, error) {
 
 // 电表应答帧
 func ElectricityAnswer(rawData []byte) (error, []byte) {
-	if len(rawData) < 16 {
-		return errors.New("数据帧长度不足FE"), nil
+	//if len(rawData) < 16 {
+	//	return errors.New("数据帧长度不足FE"), nil
+	//}
+	n := 0
+	//判断fe个数，去掉前面所有的fe
+	for i := 0; i < len(rawData); i++ {
+		if rawData[i] == 0xFE {
+			n++
+		} else {
+			break
+		}
 	}
 
-	if rawData[0] != 0xFE || rawData[1] != 0xFE || rawData[2] != 0xFE || rawData[3] != 0xFE {
-		return errors.New("电表响应标识错误"), nil
-	}
+	//if rawData[0] != 0xFE || rawData[1] != 0xFE || rawData[2] != 0xFE || rawData[3] != 0xFE {
+	//	return errors.New("电表响应标识错误"), nil
+	//}
 
 	// 确保返回有效的 []byte
 	//if len(rawData) < 5 {
 	//	return errors.New("数据帧长度不足"), nil
 	//}
 
-	return nil, rawData[4:]
+	return nil, rawData[n:]
 }
 
 // calculateChecksum 计算校验码 使用无符号byte
