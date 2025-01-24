@@ -61,8 +61,8 @@ func SendReportHandler(c *gin.Context) {
 	}
 	link, _ := mylink.GetredisLink()
 	//地址
-	var metermac string
 
+	var metermac string
 	link.Client.HGet(link.Ctx, "topic", meterID).Scan(&metermac)
 
 	if metermac == "" {
@@ -223,9 +223,11 @@ func BaowenMapFor() {
 			//停止1秒
 			time.Sleep(1 * time.Second)
 		}
-		//停止120秒
-		time.Sleep(120 * time.Second)
-
+		// 停止指定的时间间隔
+		// 将 Interval 转换为 int64 并乘以 time.Minute
+		sleepDuration := time.Duration(Interval * float64(time.Minute))
+		time.Sleep(sleepDuration)
+		fmt.Println("停止", Interval, "分钟")
 	}
 
 }
