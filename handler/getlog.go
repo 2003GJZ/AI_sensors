@@ -52,6 +52,7 @@ func readLastNLines(filePath string, n int) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer file.Close()
 
 	var lines []string

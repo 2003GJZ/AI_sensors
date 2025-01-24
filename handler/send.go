@@ -203,6 +203,7 @@ func HexKeyToByteArray(hexKey string) ([]byte, error) {
 
 	return byteArray, nil
 }
+
 func BaowenMapFor() {
 	for {
 		for key, value := range dao.BaowenMap {
