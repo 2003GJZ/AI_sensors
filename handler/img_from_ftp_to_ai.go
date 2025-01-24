@@ -36,7 +36,7 @@ var ptr *dao.UpdataMacImg
 // 路由5的处理器: 读取最新图片并发送给AI服务器
 func UploadFtpHandler(c *gin.Context) {
 	link, err := mylink.GetredisLink()
-	// 标记1: 获
+	//标记1: 获
 	//取mac字段
 	//用结构体接收
 	var req ImageRequest
