@@ -47,12 +47,18 @@ func GetAitoRedis(c *gin.Context) {
 	// 标记5: 保存AI处理结果 到redis
 	link.Client.HSet(link.Ctx, "ai_value", aiRespones.DeviceID, aiRespones.Data)
 
-	//直接递增价格
-	_, err = link.Client.HIncrBy(link.Ctx, "increment_results", "ai_num", 1).Result()
-	if err != nil {
-		log.Printf("在 Redis 中无法提高价格: %v\n", err)
-		return
-	}
+	////直接递增价格Billing
+	//err = Billing(aiRespones.DeviceID)
+	//if err != nil {
+	//	log.Println(aiRespones.DeviceID, "直接递增价格失败-------------------------------->>ERR>>>>", err)
+	//	return
+	//}
+
+	//_, err = link.Client.HIncrBy(link.Ctx, "increment_results", "ai_num", 1).Result()
+	//if err != nil {
+	//	log.Printf("在 Redis 中无法提高价格: %v\n", err)
+	//	return
+	//}
 } // AI结果存储目录
 
 // 辅助函数: 保存AI处理结果到指定文件

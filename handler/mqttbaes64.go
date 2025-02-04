@@ -137,6 +137,13 @@ func MqttBaes64Handler(c *gin.Context) {
 	// 将字符串保存到Redis
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 
+	////直接递增价格Billing
+	//err = Billing(req.Topic)
+	//if err != nil {
+	//	log.Println(req.Topic, "直接递增价格失败-------------------------------->>ERR>>>>", err)
+	//	return
+	//}
+
 	//通知前端
 	//TODO 通知前端
 	dao.NoticeUpdate(req.Topic)

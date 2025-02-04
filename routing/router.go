@@ -57,6 +57,15 @@ func Router() *gin.Engine {
 	//获取电表上报间隔时间
 	router.POST("/getintervaltime", handler.GetIntervalTime)
 
+	//通知需要计费
+	router.POST("/billing", handler.Billing)
+
+	//处理标注数据
+	router.POST("/indicator", handler.Indicator)
+
+	//接收标注结果
+	router.POST("/ai_indicator", handler.Ai_Indicator)
+
 	// TODO 路由标记8:
 	//1.DLT645-2007协议解析栈 (ok)
 	// TODO 2.处理逻辑实现
