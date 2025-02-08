@@ -3,9 +3,8 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
+	"log"
 	"time"
-	//"imgginaimqtt/disposition"
-	//"time"
 )
 
 // 询问是否需要上传图片
@@ -16,7 +15,14 @@ func DeviceRequestHandle(c *gin.Context) {
 	}
 
 	// 检查MAC地址是否存在
-	if ptr != nil {
+	ptrValue, exists := dao.MacAddressStatus.Load(id)
+	if exists {
+		ptr, ok := ptrValue.(*dao.UpdataMacImg)
+		if !ok {
+			log.Printf("类型断言失败: %v 不是 *UpdataMacImg 类型", ptrValue)
+			c.JSON(400, dao.ResponseEER_400("类型断言失败"))
+			return
+		}
 		checkAndModifyNeedImage(ptr)
 
 		if ptr.NeedsImage == "1" { // 检查是否需要图片
@@ -27,7 +33,8 @@ func DeviceRequestHandle(c *gin.Context) {
 		}
 	} else {
 		//首次上传询问
-		dao.MacAddressStatus[id] = &dao.UpdataMacImg{}
+		newPtr := &dao.UpdataMacImg{}
+		dao.MacAddressStatus.Store(id, newPtr)
 		c.JSON(211, dao.ResponseSuccess_211())
 	}
 }

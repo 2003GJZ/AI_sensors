@@ -13,28 +13,22 @@ func UpdataImgHandler(c *gin.Context) { //被动下行接口
 		c.JSON(400, dao.ResponseEER_400("Invalid request format"))
 		return
 	}
-	req := dao.Request{
-		MACAddress: id,
-		UpdataImg: dao.UpdataMacImg{
-			NeedsImage: imgneedimg,
-		},
-	}
 
-	//var req dao.Request
-	//if err := c.ShouldBindJSON(&req); err != nil {
-	//	c.JSON(400, dao.ResponseEER_400("Invalid request format"))
-	//	return
-	//}
-	//首先查询
-	status := dao.MacAddressStatus[req.MACAddress]
-	if status == nil {
-		//没有查询到
-		dao.MacAddressStatus[req.MACAddress] = &req.UpdataImg
+	// 获取或创建 MacAddressStatus 条目
+	ptrValue, exists := dao.MacAddressStatus.Load(id)
+	var ptr *dao.UpdataMacImg
+	if exists {
+		var ok bool
+		ptr, ok = ptrValue.(*dao.UpdataMacImg)
+		if !ok {
+			c.JSON(400, dao.ResponseEER_400("类型断言失败"))
+			return
+		}
+		ptr.NeedsImage = imgneedimg
 	} else {
-		status.NeedsImage = req.UpdataImg.NeedsImage
+		ptr = &dao.UpdataMacImg{NeedsImage: imgneedimg}
+		dao.MacAddressStatus.Store(id, ptr)
 	}
+
 	c.JSON(200, dao.ResponseSuccess("Success"))
-
 }
-
-//"\"indicator center list\": [[89, 131],[195,133],[301,1331, [411,133],[84,238], [192,238], [300, 241], [410, 242]],\"indicator_namelist\":[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\"]"

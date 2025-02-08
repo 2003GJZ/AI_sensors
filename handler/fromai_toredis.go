@@ -27,11 +27,15 @@ func GetAitoRedis(c *gin.Context) {
 		log.Println("解析JSON失败-------------------------------->>ERR>>>>", err)
 		return
 	}
-
+	//fmt.Println(aiRespones.DeviceID)
 	var tableType string
 	var id_value string
 	link.Client.HGet(link.Ctx, "type", aiRespones.DeviceID).Scan(&tableType)
-
+	if tableType == "" {
+		log.Println("没有找到该设备对应的表-------------------------------->>ERR>>>>")
+		return
+	}
+	//fmt.Println(tableType)
 	id_value = aiRespones.DeviceID + ":" + aiRespones.Data
 
 	logName := tableType + "_" + aiRespones.DeviceID + ".log"
@@ -44,8 +48,23 @@ func GetAitoRedis(c *gin.Context) {
 		return
 	}
 
-	// 标记5: 保存AI处理结果 到redis
-	link.Client.HSet(link.Ctx, "ai_value", aiRespones.DeviceID, aiRespones.Data)
+	//////////////////////////////////////////////
+	if tableType == "Indicator" {
+		//fmt.Println("1233")
+		result, err := Ai_Indicator(aiRespones)
+		if err != nil {
+			log.Println("AI处理失败-------------------------------->>ERR>>>>", err)
+			return
+		}
+		link.Client.HSet(link.Ctx, "ai_value", aiRespones.DeviceID, result)
+
+		respond(c, 200, "redis保存成功", nil)
+	} else {
+		// 标记5: 保存AI处理结果 到redis
+		link.Client.HSet(link.Ctx, "ai_value", aiRespones.DeviceID, aiRespones.Data)
+
+		respond(c, 200, "redis保存成功", nil)
+	}
 
 	////直接递增价格Billing
 	//err = Billing(aiRespones.DeviceID)

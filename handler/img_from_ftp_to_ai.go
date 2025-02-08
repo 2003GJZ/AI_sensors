@@ -44,6 +44,7 @@ func UploadFtpHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	defer link.Client.Close()
 
 	// 现在你可以通过 req.ID 和 req.ImgName 来访问这些数据
 	id := req.ID
@@ -70,14 +71,20 @@ func UploadFtpHandler(c *gin.Context) {
 
 	// 标记2: 构造文件夹路径
 
-	ptr = dao.MacAddressStatus[id]
+	value, ok := dao.MacAddressStatus.Load(id)
+	if ok {
+		ptr = value.(*dao.UpdataMacImg)
+	} else {
+		ptr = nil
+	}
 	lastUpdataTime := time.Now().UnixNano()
 
 	//填充当前时间
 	if ptr == nil {
-		dao.MacAddressStatus[id] = &dao.UpdataMacImg{LastUpdata: lastUpdataTime}
+		dao.MacAddressStatus.Store(id, &dao.UpdataMacImg{LastUpdata: lastUpdataTime})
 	} else {
 		ptr.LastUpdata = lastUpdataTime
+		dao.MacAddressStatus.Store(id, ptr)
 	}
 
 	//检查文件夹是否存在
@@ -116,9 +123,14 @@ func UploadFtpHandler(c *gin.Context) {
 		return
 	}
 
-	// 访问 AI_Model_1 模型
-	model := dao.AimodelTable[aimodelName]
-	aimodelName = model.AimodelUrl
+	//// 访问 AI_Model_1 模型
+	//value, ok = dao.AimodelTable.Load(aimodelName)
+	//if !ok {
+	//	c.JSON(http.StatusInternalServerError, dao.ResponseEER_400("AI model not found"))
+	//	return
+	//}
+	//model := value.(dao.Aimodel)
+	//aimodelName = model.AimodelUrl
 
 	// 打印模型信息
 	//fmt.Printf("Model URL: %s\n", model.AimodelUrl)
@@ -132,7 +144,12 @@ func UploadFtpHandler(c *gin.Context) {
 		//link1, _ := mylink.GetredisLink()
 		//选择ai摸型
 		//查询AI地址
-		status := dao.MacAddressStatus[id]
+		value, ok := dao.MacAddressStatus.Load(id)
+		if !ok {
+			log.Println(id, "没有此MAC地址-------------------------------->>ERR>>>>")
+			return
+		}
+		status := value.(*dao.UpdataMacImg)
 		//aimodel:= dao.AimodelTable[aimodelName]
 
 		//if !ok {

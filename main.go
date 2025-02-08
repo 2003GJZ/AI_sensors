@@ -24,40 +24,38 @@ var logFile *os.File
 func init() {
 	/*后加入nds维护*/
 	// TODO 加添ai模型对应路径到表中
-	dao.AimodelTable["AI_Model_1"] = dao.Aimodel{ //电表
+	dao.AimodelTable.Store("AI_Model_1", dao.Aimodel{ //电表
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
 		AimodelName: "Ammeter_ai",
-	}
-	dao.AimodelTable["AI_Model_2"] = dao.Aimodel{ //水表
+	})
+	dao.AimodelTable.Store("AI_Model_2", dao.Aimodel{ //水表
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/water-meter",
 		AimodelName: "WaterMeter_ai",
-	}
-	dao.AimodelTable["AI_Model_3"] = dao.Aimodel{ //压力表
+	})
+	dao.AimodelTable.Store("AI_Model_3", dao.Aimodel{ //压力表
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/pressure",
 		AimodelName: "PressureMeter_ai",
-	}
-	dao.AimodelTable["AI_Model_4"] = dao.Aimodel{ //液位表
+	})
+	dao.AimodelTable.Store("AI_Model_4", dao.Aimodel{ //液位表
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/levelmeter",
 		AimodelName: "LevelMeter_ai",
-	}
-	dao.AimodelTable["AI_Model_5"] = dao.Aimodel{ //污水报警
+	})
+	dao.AimodelTable.Store("AI_Model_5", dao.Aimodel{ //污水报警
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
 		AimodelName: "SewageAlarm_ai",
-	}
-	dao.AimodelTable["AI_Model_6"] = dao.Aimodel{ //控制灯板
+	})
+	dao.AimodelTable.Store("AI_Model_6", dao.Aimodel{ //控制灯板
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
 		AimodelName: "ControlPanel_ai",
-	}
-	dao.AimodelTable["AI_Model_7"] = dao.Aimodel{ //温度表
+	})
+	dao.AimodelTable.Store("AI_Model_7", dao.Aimodel{ //温度表
 		AimodelUrl:  "http://127.0.0.1:5000/recognize/temperature",
 		AimodelName: "TemperatureMeter_ai",
-	}
+	})
 
 	// 注册结构体到DAO
-
-	dao.StructRegistry["Ammeter"] = dao.Ammeter{} //电表
-
-	dao.StructRegistry["temphum"] = dao.TempHum{} //温湿度
+	dao.StructRegistry.Store("Ammeter", dao.Ammeter{}) //电表
+	dao.StructRegistry.Store("temphum", dao.TempHum{}) //温湿度
 
 	// 创建存储文件夹
 	//if err := os.MkdirAll(disposition.UploadDir, os.ModePerm); err != nil {
@@ -74,12 +72,11 @@ func init() {
 	}
 
 	//写一个hashmap存字符串
-	dao.BaowenMap = make(map[string]string)
+	dao.BaowenMap.Store("key1", "value1") // 示例存储
 }
 
 // 主函数入口
 func main() {
-
 	defer logFile.Close()
 	log.SetOutput(logFile)
 

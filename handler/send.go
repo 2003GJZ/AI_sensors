@@ -98,7 +98,7 @@ func SendReportHandler(c *gin.Context) {
 
 	//id_V	:	报文
 	key := meterID + "_" + requestBody.Data
-	dao.BaowenMap[key] = base64Message
+	dao.BaowenMap.Store(key, base64Message)
 
 	// 发送报文到网关
 	err = SendToGateway(meterID, base64Message)
@@ -206,29 +206,31 @@ func HexKeyToByteArray(hexKey string) ([]byte, error) {
 
 func BaowenMapFor() {
 	for {
-		for key, value := range dao.BaowenMap {
+		dao.BaowenMap.Range(func(key, value interface{}) bool {
+			k := key.(string)
+			v := value.(string)
 			// 使用Split函数按照下划线分割
-			parts := strings.Split(key, "_")
+			parts := strings.Split(k, "_")
 			// 检查分割结果
 			if len(parts) == 2 {
 				topic := parts[0]
 				// 发送报文到网关
-				err := SendToGateway(topic, value)
+				err := SendToGateway(topic, v)
 				if err != nil {
 					log.Println("发送报文失败: %v", err)
-					return
+					return false
 				}
 			} else {
 				log.Println("字符串格式不正确")
 			}
 			//停止1秒
 			time.Sleep(1 * time.Second)
-		}
+			return true
+		})
 		// 停止指定的时间间隔
 		// 将 Interval 转换为 int64 并乘以 time.Minute
 		sleepDuration := time.Duration(Interval * float64(time.Minute))
 		time.Sleep(sleepDuration)
 		fmt.Println("停止", Interval, "分钟")
 	}
-
 }
