@@ -13,7 +13,10 @@ var MacAddressStatus sync.Map
 // aimodel表
 var AimodelTable sync.Map
 
+// baowen表
 var BaowenMap sync.Map
+
+//
 
 //
 //// 读取StructRegistry中的值

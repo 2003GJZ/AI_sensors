@@ -30,7 +30,7 @@ type ImageRequest struct {
 	ImgName string `form:"imgname"`
 }
 
-var ptr *dao.UpdataMacImg
+//var ptr *dao.UpdataMacImg
 
 // 上传完图片通知
 // 路由5的处理器: 读取最新图片并发送给AI服务器
@@ -71,21 +71,21 @@ func UploadFtpHandler(c *gin.Context) {
 
 	// 标记2: 构造文件夹路径
 
-	value, ok := dao.MacAddressStatus.Load(id)
-	if ok {
-		ptr = value.(*dao.UpdataMacImg)
-	} else {
-		ptr = nil
-	}
-	lastUpdataTime := time.Now().UnixNano()
+	//value, ok := dao.MacAddressStatus.Load(id)
+	//if ok {
+	//	ptr = value.(*dao.UpdataMacImg)
+	//} else {
+	//	ptr = nil
+	//}
+	//lastUpdataTime := time.Now().UnixNano()
 
-	//填充当前时间
-	if ptr == nil {
-		dao.MacAddressStatus.Store(id, &dao.UpdataMacImg{LastUpdata: lastUpdataTime})
-	} else {
-		ptr.LastUpdata = lastUpdataTime
-		dao.MacAddressStatus.Store(id, ptr)
-	}
+	////填充当前时间
+	//if ptr == nil {
+	//	dao.MacAddressStatus.Store(id, &dao.UpdataMacImg{LastUpdata: lastUpdataTime})
+	//} else {
+	//	ptr.LastUpdata = lastUpdataTime
+	//	dao.MacAddressStatus.Store(id, ptr)
+	//}
 
 	//检查文件夹是否存在
 	//dirPath := filepath.Join(disposition.FtpPathex, id)
@@ -110,18 +110,37 @@ func UploadFtpHandler(c *gin.Context) {
 		return
 	}
 	//link, _ := mylink.GetredisLink()
-	//查询redis选择url
+
+	//存储url
 	var tableType string
 	var aimodelName string
-	link.Client.HGet(link.Ctx, "type", id).Scan(&tableType)
-
-	//查询redis选择ai模型
-	if tableType != "" {
-		link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
+	// 从哈希表查询模型url
+	if value, ok := dao.AimodelTable.Load(id); ok {
+		tableType = value.(string)
 	} else {
-		respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
-		return
+		// 处理未找到的情况
+		log.Println("未找到模型URL，ID为:", id)
+
+		//查询redis选择url
+		link.Client.HGet(link.Ctx, "type", id).Scan(&tableType)
+		if tableType == "" {
+			log.Println("没有找到该设备对应的表-------------------------------->>ERR>>>>，ID为：", id)
+			respond(c, 400, "not tableType", nil)
+			return
+		}
+
+		//查询redis选择ai的url
+		if tableType != "" {
+			link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
+		} else {
+			respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
+			return
+		}
+		//存进哈希表
+		dao.AimodelTable.Store(id, tableType)
 	}
+
+	//创建哈希表存储url，第一次查redis
 
 	//// 访问 AI_Model_1 模型
 	//value, ok = dao.AimodelTable.Load(aimodelName)

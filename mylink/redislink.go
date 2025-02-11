@@ -18,12 +18,20 @@ func NewRedisLink(databasenum int) (*RedisLink, error) {
 	// 创建 Redis 客户端
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
-		Addr:         "127.0.0.1:6379",
-		Password:     "meter@aly",
-		DB:           databasenum, // 默认数据库为 0
-		MaxIdleConns: 100000,      // 最大空闲连接数
-		PoolSize:     1000000,     // 最大打开连接数
-		MinIdleConns: 10000,       // 最小空闲连接数
+		Addr:     "127.0.0.1:6379",
+		Password: "",
+		DB:       databasenum, // 默认数据库为 0
+		//// 设置连接池参数
+		//PoolSize:     100000,         // 连接池最大连接数
+		//MinIdleConns: 2000,         // 最小空闲连接数
+		//DialTimeout:  5 * time.Second, // 连接超时时间
+		//ReadTimeout:  3 * time.Second, // 读取超时时间
+		//WriteTimeout: 3 * time.Second, // 写入超时时间
+		//PoolTimeout:  0,               // 等待可用连接的最大时间，0表示无限等待
+		PoolSize:     1000, // 非常大的连接池大小
+		MinIdleConns: 100,  // 最小空闲连接数
+		MaxIdleConns: 1000, // 最大空闲连接数
+		PoolTimeout:  0,    // 等待可用连接的最大时间
 	})
 	// 测试链接
 	if !REDIS_JUST_ONCE {

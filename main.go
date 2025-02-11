@@ -22,36 +22,36 @@ var logFile *os.File
 */
 
 func init() {
-	/*后加入nds维护*/
-	// TODO 加添ai模型对应路径到表中
-	dao.AimodelTable.Store("AI_Model_1", dao.Aimodel{ //电表
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
-		AimodelName: "Ammeter_ai",
-	})
-	dao.AimodelTable.Store("AI_Model_2", dao.Aimodel{ //水表
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/water-meter",
-		AimodelName: "WaterMeter_ai",
-	})
-	dao.AimodelTable.Store("AI_Model_3", dao.Aimodel{ //压力表
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/pressure",
-		AimodelName: "PressureMeter_ai",
-	})
-	dao.AimodelTable.Store("AI_Model_4", dao.Aimodel{ //液位表
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/levelmeter",
-		AimodelName: "LevelMeter_ai",
-	})
-	dao.AimodelTable.Store("AI_Model_5", dao.Aimodel{ //污水报警
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
-		AimodelName: "SewageAlarm_ai",
-	})
-	dao.AimodelTable.Store("AI_Model_6", dao.Aimodel{ //控制灯板
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
-		AimodelName: "ControlPanel_ai",
-	})
-	dao.AimodelTable.Store("AI_Model_7", dao.Aimodel{ //温度表
-		AimodelUrl:  "http://127.0.0.1:5000/recognize/temperature",
-		AimodelName: "TemperatureMeter_ai",
-	})
+	///*后加入nds维护*/
+	//// TODO 加添ai模型对应路径到表中
+	//dao.AimodelTable.Store("AI_Model_1", dao.Aimodel{ //电表
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
+	//	AimodelName: "Ammeter_ai",
+	//})
+	//dao.AimodelTable.Store("AI_Model_2", dao.Aimodel{ //水表
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/water-meter",
+	//	AimodelName: "WaterMeter_ai",
+	//})
+	//dao.AimodelTable.Store("AI_Model_3", dao.Aimodel{ //压力表
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/pressure",
+	//	AimodelName: "PressureMeter_ai",
+	//})
+	//dao.AimodelTable.Store("AI_Model_4", dao.Aimodel{ //液位表
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/levelmeter",
+	//	AimodelName: "LevelMeter_ai",
+	//})
+	//dao.AimodelTable.Store("AI_Model_5", dao.Aimodel{ //污水报警
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
+	//	AimodelName: "SewageAlarm_ai",
+	//})
+	//dao.AimodelTable.Store("AI_Model_6", dao.Aimodel{ //控制灯板
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/indicator",
+	//	AimodelName: "ControlPanel_ai",
+	//})
+	//dao.AimodelTable.Store("AI_Model_7", dao.Aimodel{ //温度表
+	//	AimodelUrl:  "http://127.0.0.1:5000/recognize/temperature",
+	//	AimodelName: "TemperatureMeter_ai",
+	//})
 
 	// 注册结构体到DAO
 	dao.StructRegistry.Store("Ammeter", dao.Ammeter{}) //电表
@@ -72,7 +72,7 @@ func init() {
 	}
 
 	//写一个hashmap存字符串
-	dao.BaowenMap.Store("key1", "value1") // 示例存储
+	//dao.BaowenMap.Store("key1", "value1") // 示例存储
 }
 
 // 主函数入口
