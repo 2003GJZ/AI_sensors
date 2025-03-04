@@ -75,7 +75,7 @@ func Ai_Indicator(msg dao.Message) (string, error) {
 	// 初始化 results
 	results := make(map[string]string)
 	for label := range annotations {
-		results[label] = "off"
+		results[label] = "OFF"
 	}
 
 	// 遍历解析后的数据点

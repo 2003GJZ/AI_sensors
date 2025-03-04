@@ -132,7 +132,7 @@ func SendToGateway(topic string, message string) error {
 		return err
 	}
 	//fmt.Println("发送报文到网关:", topic, "///", message)
-	resp, err := http.Post("http://47.96.91.185:4366/publish", "application/json", bytes.NewBuffer(jsonPayload))
+	resp, err := http.Post("http://localhost:4366/publish", "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		log.Printf("发送 HTTP POST 请求失败: %v", err)
 		return err

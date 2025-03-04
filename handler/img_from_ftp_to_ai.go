@@ -116,13 +116,15 @@ func UploadFtpHandler(c *gin.Context) {
 	var aimodelName string
 	// 从哈希表查询模型url
 	if value, ok := dao.AimodelTable.Load(id); ok {
-		tableType = value.(string)
+		//fmt.Println("哈希表查询结果:", value)
+		aimodelName = value.(string)
 	} else {
 		// 处理未找到的情况
 		log.Println("未找到模型URL，ID为:", id)
 
 		//查询redis选择url
 		link.Client.HGet(link.Ctx, "type", id).Scan(&tableType)
+
 		if tableType == "" {
 			log.Println("没有找到该设备对应的表-------------------------------->>ERR>>>>，ID为：", id)
 			respond(c, 400, "not tableType", nil)
@@ -137,7 +139,7 @@ func UploadFtpHandler(c *gin.Context) {
 			return
 		}
 		//存进哈希表
-		dao.AimodelTable.Store(id, tableType)
+		dao.AimodelTable.Store(id, aimodelName)
 	}
 
 	//创建哈希表存储url，第一次查redis
@@ -159,16 +161,17 @@ func UploadFtpHandler(c *gin.Context) {
 	//fmt.Println(aimodelName)
 	//ch := make(chan int)
 	//启动匿名函数发送给ai
+
 	go func() {
-		//link1, _ := mylink.GetredisLink()
+		link1, _ := mylink.GetredisLink()
 		//选择ai摸型
 		//查询AI地址
-		value, ok := dao.MacAddressStatus.Load(id)
-		if !ok {
-			log.Println(id, "没有此MAC地址-------------------------------->>ERR>>>>")
-			return
-		}
-		status := value.(*dao.UpdataMacImg)
+		//value, ok := dao.MacAddressStatus.Load(id)
+		//if !ok {
+		//	log.Println(id, "没有此MAC地址-------------------------------->>ERR>>>>")
+		//	return
+		//}
+		//status := value.(*dao.UpdataMacImg)
 		//aimodel:= dao.AimodelTable[aimodelName]
 
 		//if !ok {
@@ -193,13 +196,13 @@ func UploadFtpHandler(c *gin.Context) {
 		//参数body
 		imgmaseg.Id = id
 		imgmaseg.Img_path = imgpath
-		link.Client.HGet(link.Ctx, "status", id).Scan(&imgmaseg.Range)
-		link.Client.HGet(link.Ctx, "istailor", id).Scan(&imgmaseg.Istailor)
+		link1.Client.HGet(link1.Ctx, "status", id).Scan(&imgmaseg.Range)
+		link1.Client.HGet(link1.Ctx, "istailor", id).Scan(&imgmaseg.Istailor)
 		if imgmaseg.Istailor == "" {
 			imgmaseg.Istailor = "yes"
 		}
 
-		log.Println("id:", imgmaseg.Id, "imgname:", imgmaseg.Img_path)
+		//fmt.Println("id:", imgmaseg.Id, "imgname:", imgmaseg.Img_path, "range:", imgmaseg.Range, "istailor:", imgmaseg.Istailor)
 		//var tabe string
 		//link1.Client.HGet(link.Ctx, "imgRes", aimodelName).Scan(&tabe)
 		//imgmaseg.Data = tabe
@@ -222,9 +225,10 @@ func UploadFtpHandler(c *gin.Context) {
 		//判断code
 		if response.StatusCode != http.StatusOK {
 			//识别失败继续上传
-			if status != nil {
-				status.NeedsImage = "1"
-			}
+			//if status != nil {
+			//	status.NeedsImage = "1"
+			//}
+			log.Println(aimodelName, "识别失败-------------------------------->>ERR>>>>", err2)
 			//ch <- 601
 			//ch <- 601
 		} else {

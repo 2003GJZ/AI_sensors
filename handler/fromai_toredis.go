@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -27,6 +28,15 @@ func GetAitoRedis(c *gin.Context) {
 		log.Println("解析JSON失败-------------------------------->>ERR>>>>", err)
 		return
 	}
+
+	//////////////////////////////////////////////临时造假
+	if aiRespones.Data == "" || aiRespones.Data == "null" || aiRespones.Data == "0" {
+
+		link.Client.HGet(link.Ctx, "ai_value", aiRespones.DeviceID).Scan(&aiRespones.Data)
+
+		fmt.Fprintln(os.Stdout, "AI处理结果为空或null或0-------------------------------->>ERR>>>>")
+	}
+
 	//fmt.Println(aiRespones.DeviceID)
 	var tableType string
 	var id_value string
@@ -40,15 +50,6 @@ func GetAitoRedis(c *gin.Context) {
 
 	logName := tableType + "_" + aiRespones.DeviceID + ".log"
 
-	//把ai处理结果写到文件里
-	err = saveResult(id_value, disposition.AiResultsDir, logName)
-
-	if err != nil {
-		log.Println("保存AI处理结果到文件失败-------------------------------->>ERR>>>>", err)
-		return
-	}
-
-	//////////////////////////////////////////////
 	if tableType == "Indicator" {
 		//fmt.Println("1233")
 		result, err := Ai_Indicator(aiRespones)
@@ -56,10 +57,30 @@ func GetAitoRedis(c *gin.Context) {
 			log.Println("AI处理失败-------------------------------->>ERR>>>>", err)
 			return
 		}
+
 		link.Client.HSet(link.Ctx, "ai_value", aiRespones.DeviceID, result)
+
+		// 替换所有的换行符和空格
+		dataOneline := strings.ReplaceAll(result, "\n", "")
+		dataOneline = strings.ReplaceAll(dataOneline, "  ", "")
+
+		result = aiRespones.DeviceID + ":" + dataOneline
+		//把ai处理结果写到文件里
+		err = saveResult(dataOneline, disposition.AiResultsDir, logName)
+		if err != nil {
+			log.Println("保存AI处理结果到文件失败-------------------------------->>ERR>>>>", err)
+			return
+		}
 
 		respond(c, 200, "redis保存成功", nil)
 	} else {
+		//把ai处理结果写到文件里
+		err = saveResult(id_value, disposition.AiResultsDir, logName)
+		if err != nil {
+			log.Println("保存AI处理结果到文件失败-------------------------------->>ERR>>>>", err)
+			return
+		}
+
 		// 标记5: 保存AI处理结果 到redis
 		link.Client.HSet(link.Ctx, "ai_value", aiRespones.DeviceID, aiRespones.Data)
 
