@@ -165,7 +165,7 @@ func subscribeToGateway(topic string) error {
 	}
 
 	// 创建 HTTP POST 请求
-	resp, err := http.Post("http://47.96.91.185:4366/subscribe", "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post("http://localhost:4366/subscribe", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Printf("发送 POST 请求失败: %v\n", err)
 		return nil
