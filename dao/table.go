@@ -10,6 +10,7 @@ type UpdataMacImg struct {
 	NeedsImage string `json:"needsImage"` // 是否需要更新图片   "1"需要   “0”不需要
 	LastUpdata int64  `json:"listUpdata"` //上次更新时间
 }
+
 type Aimodel struct {
 	AimodelName string `json:"aimodel_name"` //ai模型名称
 	AimodelUrl  string `json:"aimodel_url"`  //ai模型地址
@@ -46,7 +47,6 @@ type Ammeter struct { // 电表
 	BVoltage string `json:"b_voltage"`
 	CVoltage string `json:"c_voltage"`
 	//ABC	相电压
-
 }
 
 // TempHum 温湿度

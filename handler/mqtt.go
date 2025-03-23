@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
 	"imgginaimqtt/mylink"
+	"imgginaimqtt/protocol_stack"
+	_ "imgginaimqtt/protocol_stack"
 	"io/ioutil"
 	"log"
 	"reflect"
@@ -41,7 +43,12 @@ func getStructTypeFromRedis(hsetKey, key string) (string, error) {
 
 // 动态初始化结构体的新实例
 func initStruct(structType string) (interface{}, int) {
-	if structTemplate, exists := dao.StructRegistry[structType]; exists {
+	if structTemplateValue, exists := dao.StructRegistry.Load(structType); exists {
+		structTemplate, ok := structTemplateValue.(interface{})
+		if !ok {
+			log.Printf("结构体模板 %s 类型断言失败", structType)
+			return make(map[string]interface{}), 0
+		}
 		// 使用反射创建新实例
 		newInstance := reflect.New(reflect.TypeOf(structTemplate)).Interface()
 		return newInstance, 1
@@ -142,10 +149,7 @@ func MqttHandler(c *gin.Context) {
 		return
 	}
 	defer c.Request.Body.Close()
-
 	//bese64解码
-
-	fmt.Println("数据组:", string(body))
-
+	body, _ = protocol_stack.MyBase64ToBytes(string(body))
 	respond(c, 200, "数据处理成功并保存到 Redis！", nil)
 }
