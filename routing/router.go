@@ -30,14 +30,14 @@ func Router() *gin.Engine {
 	//路由标记6:iot端询问是否需要图片，
 	//router.POST("/need_image", handler.DeviceRequestHandle)
 
-	//路由标记7:客户端发起mac地址更新请求,或者是否需要图片请求，触发被动下行      MAC更新完了后会触发文件删除，和redis重置
-	router.POST("/update_image", handler.UpdataImgHandler)
+	////路由标记7:客户端发起mac地址更新请求,或者是否需要图片请求，触发被动下行      MAC更新完了后会触发文件删除，和redis重置
+	//router.POST("/update_image", handler.UpdataImgHandler)
 
-	//DltHttp(测试用)
-	router.POST("/dlthttp", handler.DltHttp)
+	////DltHttp(测试用)
+	//router.POST("/dlthttp", handler.DltHttp)
 
-	//路由标记漏水，液位
-	router.POST("/waterlevel", handler.WaterLevelHandler)
+	////路由标记漏水，液位
+	//router.POST("/waterlevel", handler.WaterLevelHandler)
 
 	//路由标记 mkdir
 	router.POST("/mkdir", handler.MkdirHandler)
@@ -67,7 +67,7 @@ func Router() *gin.Engine {
 	//1.DLT645-2007协议解析栈 (ok)
 	// TODO 2.处理逻辑实现
 	//启动轮询
-	go handler.BaowenMapFor()
+	//go handler.BaowenMapFor()
 
 	return router
 
