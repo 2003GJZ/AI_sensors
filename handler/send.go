@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
+	"imgginaimqtt/disposition"
 	"imgginaimqtt/mylink"
 	"io/ioutil"
 	"log"
@@ -76,7 +77,7 @@ func SendToGateway(topic string, message string) error {
 		log.Printf("构建 JSON Payload 失败: %v", err)
 		return err
 	}
-	resp, err := http.Post("http://localhost:4366/publish", "application/json", bytes.NewBuffer(jsonPayload))
+	resp, err := http.Post(disposition.NextUrl, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		log.Printf("发送 HTTP POST 请求失败: %v", err)
 		return err

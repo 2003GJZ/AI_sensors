@@ -23,7 +23,7 @@ var AiResultsDir = "/home/aly/data/ai_results" // 结果存储目录
 // var FtpPathex = "D:\\var\\ftp\\ftpuser" //ftp目录
 // /var/ftp/ftpuser/9981
 var NoticeUpdataUrl = "http://127.0.0.1:3000/api/monitor/updataAiRes" //ftp地址 通知前端哪个IP处理结果完成了去redis拿
-
+var NextUrl = "http://localhost:4366/publish"
 var RedisAddr = "127.0.0.1:6379"
 var RedisDB = 0
 var RedisPassword = "meter@aly"
