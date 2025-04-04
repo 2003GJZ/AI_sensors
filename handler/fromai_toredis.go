@@ -29,15 +29,6 @@ func GetAitoRedis(c *gin.Context) {
 		return
 	}
 
-	//////////////////////////////////////////////临时造假
-	if aiRespones.Data == "" || aiRespones.Data == "null" || aiRespones.Data == "0" {
-
-		link.Client.HGet(link.Ctx, "ai_value", aiRespones.DeviceID).Scan(&aiRespones.Data)
-
-		fmt.Fprintln(os.Stdout, "AI处理结果为空或null或0-------------------------------->>ERR>>>>")
-	}
-
-	//fmt.Println(aiRespones.DeviceID)
 	var tableType string
 	var id_value string
 	link.Client.HGet(link.Ctx, "type", aiRespones.DeviceID).Scan(&tableType)
@@ -51,7 +42,6 @@ func GetAitoRedis(c *gin.Context) {
 	logName := tableType + "_" + aiRespones.DeviceID + ".log"
 
 	if tableType == "Indicator" {
-		//fmt.Println("1233")
 		result, err := Ai_Indicator(aiRespones)
 		if err != nil {
 			log.Println("AI处理失败-------------------------------->>ERR>>>>", err)
@@ -87,18 +77,6 @@ func GetAitoRedis(c *gin.Context) {
 		respond(c, 200, "redis保存成功", nil)
 	}
 
-	////直接递增价格Billing
-	//err = Billing(aiRespones.DeviceID)
-	//if err != nil {
-	//	log.Println(aiRespones.DeviceID, "直接递增价格失败-------------------------------->>ERR>>>>", err)
-	//	return
-	//}
-
-	//_, err = link.Client.HIncrBy(link.Ctx, "increment_results", "ai_num", 1).Result()
-	//if err != nil {
-	//	log.Printf("在 Redis 中无法提高价格: %v\n", err)
-	//	return
-	//}
 } // AI结果存储目录
 
 // 辅助函数: 保存AI处理结果到指定文件

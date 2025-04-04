@@ -79,7 +79,7 @@ func UploadFtpHandler(c *gin.Context) {
 		if tableType != "" {
 			link.Client.HGet(link.Ctx, "aiModel", tableType).Scan(&aimodelName)
 		} else {
-			respondWithJSON(c, http.StatusInternalServerError, "not tableType", nil)
+			respond(c, http.StatusInternalServerError, "not tableType", nil)
 			return
 		}
 		// 存进哈希表

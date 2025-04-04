@@ -2,15 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"imgginaimqtt/dao"
-	"imgginaimqtt/disposition"
 	"imgginaimqtt/mylink"
-	"imgginaimqtt/protocol_stack"
 	"log"
-	"strings"
-	"time"
 )
 
 // MQTT -> HTTP 消息结构
@@ -42,81 +37,8 @@ func MqttBaes64Handler(c *gin.Context) {
 	}
 
 	defer c.Request.Body.Close()
-
-	//bese64解码
-	bytes, err := protocol_stack.MyBase64ToBytes(string(req.Message))
-	if err != nil {
-		respond(c, 400, "base64解码失败", nil)
-	}
-
-	//dlt协议解析
-	err, i := protocol_stack.ElectricityAnswer(bytes)
-	if err != nil {
-		fmt.Println("应答解析失败: %v\n", err)
-		respond(c, 400, "DLT解码失败", nil)
-	}
-	frame, err := protocol_stack.ParseDLT645Frame(i)
-	// 数据域去偏移
-	decodedData := protocol_stack.OffsetData(frame.Data, false)
-	// 调用解析函数
-	description, value, phase, err := protocol_stack.ParseDataSegment(decodedData)
-
-	if err != nil {
-		log.Printf("解析失败: %v\n", err)
-		respond(c, 400, "DLT解码失败", nil)
-		return
-	}
-
-	log.Printf("解析结果: 类型 = %s, 值 = %s, 相位 = %s\n", description, value, phase)
-
-	// 查询Map
-	ammeter, ok := AmmeterMap[frame.Address]
-	if !ok {
-		// 如果不存在，则创建一个新的电表对象并添加到Map中
-		AmmeterMap[frame.Address] = map[string]string{
-			description: value + "$" + time.Now().Format("2006-01-02 15:04:05"),
-
-			// 初始化其他字段，如果有的话
-		}
-		ammeter = AmmeterMap[frame.Address]
-	} else {
-		ammeter[description] = value + "$" + time.Now().Format("2006-01-02 15:04:05")
-	}
-
-	//// 更新电表对象
-	//switch dataType {
-	//case "I":
-	//	switch phase {
-	//	case "A":
-	//		ammeter.ACurrent = value
-	//	case "B":
-	//		ammeter.BCurrent = value
-	//	case "C":
-	//		ammeter.CCurrent = value
-	//	case "O":
-	//		ammeter.Current = value
-	//	}
-	//
-	//case "V":
-	//	switch phase {
-	//	case "A":
-	//		ammeter.AVoltage = value
-	//	case "B":
-	//		ammeter.BVoltage = value
-	//	case "C":
-	//		ammeter.CVoltage = value
-	//	case "O":
-	//		ammeter.Voltage = value
-	//	}
-	//
-	//case "P":
-	//	ammeter.Power = value
-	//}
-
-	// 保存到Redis-------->
 	// 将结构体转换为JSON
-	ammeter, _ = AmmeterMap[frame.Address]
-	jsonData, _ := json.Marshal(ammeter)
+	jsonData, _ := json.Marshal(req.Message)
 
 	// 将JSON数据转换为字符串
 	jsonString := string(jsonData)
@@ -125,13 +47,6 @@ func MqttBaes64Handler(c *gin.Context) {
 	link, _ := mylink.GetredisLink()
 	link.Client.HSet(link.Ctx, "ai_value", req.Topic, jsonString)
 
-	meterLogName := "Ammeter_" + strings.ReplaceAll(req.Topic, "/", "_") + ".log"
-	// 保存到日志-------->
-	err = saveResult(jsonString, disposition.AiResultsDir, meterLogName)
-	if err != nil {
-		log.Println("保存电表处理结果到文件失败-------------------------------->>ERR>>>>", err)
-		return
-	}
 	//fmt.Println("保存电表处理结果到文件成功:", disposition.AiResultsDir)
 
 	// 将字符串保存到Redis

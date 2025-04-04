@@ -39,8 +39,8 @@ func Router() *gin.Engine {
 	////路由标记漏水，液位
 	//router.POST("/waterlevel", handler.WaterLevelHandler)
 
-	//路由标记 mkdir
-	router.POST("/mkdir", handler.MkdirHandler)
+	////路由标记 mkdir
+	//router.POST("/mkdir", handler.MkdirHandler)
 
 	//路由标记10：获取ai识别结果存到redis
 	router.POST("/ai_redis", handler.GetAitoRedis)
@@ -54,11 +54,11 @@ func Router() *gin.Engine {
 	//路由标记9:接收客户端信息，发送报告给网关
 	router.POST("/send_report", handler.SendReportHandler)
 
-	//获取电表上报间隔时间
-	router.POST("/getintervaltime", handler.GetIntervalTime)
+	////获取电表上报间隔时间
+	//router.POST("/getintervaltime", handler.GetIntervalTime)
 
-	//通知需要计费
-	router.POST("/billing", handler.Billing)
+	////通知需要计费
+	//router.POST("/billing", handler.Billing)
 
 	////接收标注结果
 	//router.POST("/ai_indicator", handler.Ai_Indicator)

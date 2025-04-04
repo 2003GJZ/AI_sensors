@@ -92,28 +92,3 @@ func SendToGateway(topic string, message string) error {
 	log.Printf("成功发送报文到网关")
 	return nil
 }
-
-//func BaowenMapFor() {
-//	for {
-//		dao.BaowenMap.Range(func(key, value interface{}) bool {
-//			k := key.(string)
-//			v := value.(string)
-//			parts := strings.Split(k, "_")
-//			if len(parts) == 2 {
-//				topic := parts[0]
-//				err := SendToGateway(topic, v)
-//				if err != nil {
-//					log.Println("发送报文失败: %v", err)
-//					return false
-//				}
-//			} else {
-//				log.Println("字符串格式不正确")
-//			}
-//			time.Sleep(1 * time.Second)
-//			return true
-//		})
-//		sleepDuration := time.Duration(Interval * float64(time.Minute))
-//		time.Sleep(sleepDuration)
-//		fmt.Println("停止", Interval, "分钟")
-//	}
-//}

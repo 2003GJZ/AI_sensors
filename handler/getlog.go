@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // GetLogHandler 处理获取日志文件最后10行的请求
@@ -34,13 +33,13 @@ func GetLogHandler(c *gin.Context) {
 		return
 	}
 	deviceID := aiRespones.DeviceID
-	var devicetype string
+	var logname string
 
-	link.Client.HGet(link.Ctx, "type", deviceID).Scan(&devicetype)
+	link.Client.HGet(link.Ctx, "logname", deviceID).Scan(&logname)
 
 	var logFilePath string
 	// devicetype, "_", deviceID, ".log"
-	logFileName := devicetype + "_" + strings.ReplaceAll(deviceID, "/", "_") + ".log"
+	logFileName := logname
 	logFilePath = filepath.Join(disposition.AiResultsDir, logFileName)
 
 	fmt.Println(logFilePath)
