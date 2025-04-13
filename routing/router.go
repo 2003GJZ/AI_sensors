@@ -23,10 +23,6 @@ func Router() *gin.Engine {
 	// 路由标记4: mqtt协议支持     需要搭配mqtt转http网关使用（暂未启用）
 	//router.POST("/mqtt", handler.MqttHandler)
 
-	// 路由标记5: 图片上传成功触发AI识别(ftp图片上传)                       from ftp to 百度ai or YOLOU
-	// TODO YOLOU 识别 上传nfs path 路径
-	router.POST("/upload_success", handler.UploadFtpHandler)
-
 	//路由标记6:iot端询问是否需要图片，
 	//router.POST("/need_image", handler.DeviceRequestHandle)
 
@@ -42,16 +38,20 @@ func Router() *gin.Engine {
 	////路由标记 mkdir
 	//router.POST("/mkdir", handler.MkdirHandler)
 
+	// 路由标记5: 图片上传成功触发AI识别(ftp图片上传)                       from ftp to 百度ai or YOLOU
+	// TODO YOLOU 识别 上传nfs path 路径
+	router.POST("/upload_success", handler.UploadFtpHandler)
+
 	//路由标记10：获取ai识别结果存到redis
 	router.POST("/ai_redis", handler.GetAitoRedis)
 
 	//路由标记11：获取日志
 	router.POST("/getlogs", handler.GetLogHandler)
 
-	//路由标记8:接收mqqt协议数据，解析为DLT645协议，数据存储在redis中，使用电表地址作为key
+	//路由标记8:接收mqtt协议数据，解析为DLT645协议，数据存储在redis中，使用电表地址作为key
 	router.POST("/mqttdlt645base64", handler.MqttBaes64Handler)
 
-	//路由标记9:接收客户端信息，发送报告给网关
+	//路由标记9:接收客户端信息，发送报告给网关、
 	router.POST("/send_report", handler.SendReportHandler)
 
 	////获取电表上报间隔时间
